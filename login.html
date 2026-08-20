@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In - Jua Kali</title>
+  <meta name="description" content="Sign in to your Jua Kali account." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="header" id="top">
+    <div class="header-logo">
+      <a href="index.html"><h1 class="header-title">Jua Kali☀️</h1></a>
+    </div>
+    <nav class="header-container">
+      <div class="nav-item"><a href="index.html#about">About</a></div>
+      <div class="nav-item"><a href="index.html#services">Services</a></div>
+      <div class="nav-item"><a href="index.html#why">Why Us</a></div>
+      <div class="nav-item"><a href="reviews.html">Reviews</a></div>
+      <div class="nav-auth" id="nav-auth-slot"></div>
+    </nav>
+  </header>
+
+  <section class="card signup-card" id="login">
+    <h2>Sign in to Jua Kali</h2>
+    <p>Welcome back. Enter your details to access your dashboard.</p>
+
+    <form id="login-form" novalidate>
+
+      <div class="form-group">
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" required />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required minlength="6" />
+      </div>
+
+      <p class="form-error" id="form-error" role="alert"></p>
+
+      <button type="submit" class="btn-submit">Sign in</button>
+    </form>
+
+    <p class="auth-switch">Don't have an account? <a href="signup.html">Create one</a></p>
+
+    <div class="demo-login">
+      <p class="demo-login-title">Try a demo account</p>
+      <p class="demo-login-subtext">No signup needed — click a role to explore that dashboard.</p>
+      <div class="demo-login-grid">
+        <button type="button" class="demo-login-btn" data-email="customer@juakali.com" data-password="customer123">
+          <span class="demo-login-icon">🧑‍💼</span>
+          <span class="demo-login-label">Customer</span>
+          <span class="demo-login-cred">customer@juakali.com</span>
+        </button>
+        <button type="button" class="demo-login-btn" data-email="artisan@juakali.com" data-password="artisan123">
+          <span class="demo-login-icon">🛠️</span>
+          <span class="demo-login-label">Artisan</span>
+          <span class="demo-login-cred">artisan@juakali.com</span>
+        </button>
+        <button type="button" class="demo-login-btn" data-email="admin@juakali.com" data-password="admin123">
+          <span class="demo-login-icon">🛡️</span>
+          <span class="demo-login-label">Admin</span>
+          <span class="demo-login-cred">admin@juakali.com</span>
+        </button>
+      </div>
+      <p class="demo-login-note">All demo passwords match the role name, e.g. "customer123".</p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>Contact us: info@juakali.com</p>
+    <p>Phone: +254 700 000 000</p>
+  </footer>
+
+  <script src="js/auth.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

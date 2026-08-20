@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reviews & Ratings - Jua Kali</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="header" id="top">
+    <div class="header-logo">
+      <a href="index.html"><h1 class="header-title">Jua Kali☀️</h1></a>
+    </div>
+    <nav class="header-container">
+      <div class="nav-item"><a href="index.html#about">About</a></div>
+      <div class="nav-item"><a href="index.html#services">Services</a></div>
+      <div class="nav-item"><a href="index.html#why">Why Us</a></div>
+      <div class="nav-item"><a href="index.html#steps">How to Join</a></div>
+      <div class="nav-item"><a href="reviews.html" class="active">Reviews</a></div>
+      <div class="nav-auth" id="nav-auth-slot"></div>
+    </nav>
+  </header>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-number">1,240</span>
+      <span class="stat-label">Workers Registered</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-number">8,530</span>
+      <span class="stat-label">Jobs Completed</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-number">4.8 ⭐</span>
+      <span class="stat-label">Average Rating</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-number">2,104</span>
+      <span class="stat-label">Total Reviews</span>
+    </div>
+  </div>
+
+  <!-- Ad Banner (placeholder) -->
+  <div class="ad-banner ad-banner-leaderboard">
+    <div class="ad-banner-label">Advertisement</div>
+    <div class="ad-banner-slot">728 × 90 Ad Space</div>
+  </div>
+
+  <section class="card reviews-hero-card">
+    <h2>Reviews &amp; Ratings ⭐</h2>
+    <p>Real feedback from real customers across all our service categories.</p>
+
+    <!-- Overall rating summary -->
+    <div class="rating-summary">
+      <div class="rating-big">4.8</div>
+      <div class="rating-stars-big">★★★★★</div>
+      <div class="rating-count">Based on 2,104 reviews</div>
+      <div class="rating-bars">
+        <div class="bar-row"><span>5★</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span>78%</span></div>
+        <div class="bar-row"><span>4★</span><div class="bar-track"><div class="bar-fill" style="width:14%"></div></div><span>14%</span></div>
+        <div class="bar-row"><span>3★</span><div class="bar-track"><div class="bar-fill" style="width:5%"></div></div><span>5%</span></div>
+        <div class="bar-row"><span>2★</span><div class="bar-track"><div class="bar-fill" style="width:2%"></div></div><span>2%</span></div>
+        <div class="bar-row"><span>1★</span><div class="bar-track"><div class="bar-fill bar-fill-low" style="width:1%"></div></div><span>1%</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter & Leave a Review -->
+  <div class="card-container">
+    <div class="card reviews-controls-card">
+      <div class="reviews-controls">
+        <div class="filter-group">
+          <label for="filter-category">Filter by service:</label>
+          <select id="filter-category" onchange="filterReviews()">
+            <option value="all">All Services</option>
+            <option value="Laundry">Laundry</option>
+            <option value="Cleaning">Home &amp; Office Cleaning</option>
+            <option value="Electrical">Electrical</option>
+            <option value="Gardening">Gardening</option>
+            <option value="Hair Styling">Hair Styling</option>
+            <option value="Barber">Barber</option>
+            <option value="Plumbing">Plumbing</option>
+            <option value="Cooking">Cooking</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filter-stars">Filter by rating:</label>
+          <select id="filter-stars" onchange="filterReviews()">
+            <option value="all">All Ratings</option>
+            <option value="5">5 Stars</option>
+            <option value="4">4 Stars</option>
+            <option value="3">3 Stars</option>
+            <option value="2">2 Stars</option>
+            <option value="1">1 Star</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviews list -->
+    <div class="card" id="reviews-list-card">
+      <div id="reviews-list"></div>
+      <p id="no-reviews-msg" hidden style="text-align:center;color:#555;">No reviews match your filters.</p>
+    </div>
+
+    <!-- Leave a review card -->
+    <div class="card review-form-card">
+      <h3>Leave a Review</h3>
+      <p>Worked with a Jua Kali professional? Share your experience!</p>
+      <div class="form-group">
+        <label for="rev-name">Your name</label>
+        <input type="text" id="rev-name" placeholder="e.g. Amina W." />
+      </div>
+      <div class="form-group">
+        <label for="rev-category">Service</label>
+        <select id="rev-category">
+          <option value="" disabled selected>Select a service</option>
+          <option>Laundry</option>
+          <option>Cleaning</option>
+          <option>Electrical</option>
+          <option>Gardening</option>
+          <option>Hair Styling</option>
+          <option>Barber</option>
+          <option>Plumbing</option>
+          <option>Cooking</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Rating</label>
+        <div class="star-picker" id="star-picker">
+          <span class="star" data-val="1">★</span>
+          <span class="star" data-val="2">★</span>
+          <span class="star" data-val="3">★</span>
+          <span class="star" data-val="4">★</span>
+          <span class="star" data-val="5">★</span>
+        </div>
+        <input type="hidden" id="rev-rating" value="0" />
+      </div>
+      <div class="form-group">
+        <label for="rev-text">Your review</label>
+        <textarea id="rev-text" rows="4" placeholder="Describe your experience..."></textarea>
+      </div>
+      <p class="form-error" id="rev-error"></p>
+      <button class="btn-submit" onclick="submitReview()">Submit Review</button>
+      <p class="form-success" id="rev-success" hidden>Thank you! Your review has been submitted.</p>
+    </div>
+  </div>
+
+  <!-- Service ratings summary -->
+  <div class="card" style="max-width:900px;margin:0 auto 20px;">
+    <h3 style="text-align:center;margin-bottom:20px;">Ratings by Service Category</h3>
+    <div class="category-ratings" id="category-ratings"></div>
+  </div>
+
+  <!-- Sponsors -->
+  <section class="card sponsors-section">
+    <h2>Our Sponsors</h2>
+    <p>Interested in sponsoring Jua Kali? Get your brand in front of thousands of customers and artisans.</p>
+    <div class="sponsors-grid">
+      <div class="sponsor-slot">Sponsor Slot 1</div>
+      <div class="sponsor-slot">Sponsor Slot 2</div>
+      <div class="sponsor-slot">Sponsor Slot 3</div>
+      <div class="sponsor-slot">Sponsor Slot 4</div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>Contact us: info@juakali.com</p>
+    <p>Phone: +254 700 000 000</p>
+    <div class="footer-social">
+      <a href="https://www.instagram.com/jua_kali_services/" aria-label="Instagram" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.85.07 1.17.05 1.97.24 2.43.4a4.9 4.9 0 0 1 1.77 1.15 4.9 4.9 0 0 1 1.15 1.77c.16.46.35 1.26.4 2.43.07 1.25.07 1.65.07 4.85s0 3.6-.07 4.85c-.05 1.17-.24 1.97-.4 2.43a4.9 4.9 0 0 1-1.15 1.77 4.9 4.9 0 0 1-1.77 1.15c-.46.16-1.26.35-2.43.4-1.25.07-1.65.07-4.85.07s-3.6 0-4.85-.07c-1.17-.05-1.97-.24-2.43-.4a4.9 4.9 0 0 1-1.77-1.15 4.9 4.9 0 0 1-1.15-1.77c-.16-.46-.35-1.26-.4-2.43C2.2 15.6 2.2 15.2 2.2 12s0-3.6.07-4.85c.05-1.17.24-1.97.4-2.43a4.9 4.9 0 0 1 1.15-1.77A4.9 4.9 0 0 1 5.6 1.8c.46-.16 1.26-.35 2.43-.4C9.28 1.33 9.68 1.33 12 1.33Zm0 1.8c-3.15 0-3.52 0-4.76.07-.96.04-1.48.2-1.83.34a2.9 2.9 0 0 0-1.08.7 2.9 2.9 0 0 0-.7 1.08c-.14.35-.3.87-.34 1.83-.06 1.24-.07 1.61-.07 4.76s0 3.52.07 4.76c.04.96.2 1.48.34 1.83.15.4.35.75.7 1.08.33.35.68.55 1.08.7.35.14.87.3 1.83.34 1.24.06 1.61.07 4.76.07s3.52 0 4.76-.07c.96-.04 1.48-.2 1.83-.34.4-.15.75-.35 1.08-.7.35-.33.55-.68.7-1.08.14-.35.3-.87.34-1.83.06-1.24.07-1.61.07-4.76s0-3.52-.07-4.76c-.04-.96-.2-1.48-.34-1.83a2.9 2.9 0 0 0-.7-1.08 2.9 2.9 0 0 0-1.08-.7c-.35-.14-.87-.3-1.83-.34C15.52 4 15.15 4 12 4Zm0 3.05a4.95 4.95 0 1 1 0 9.9 4.95 4.95 0 0 1 0-9.9Zm0 1.8a3.15 3.15 0 1 0 0 6.3 3.15 3.15 0 0 0 0-6.3Zm5.15-2a1.16 1.16 0 1 1 0 2.32 1.16 1.16 0 0 1 0-2.32Z"/></svg>
+      </a>
+      <!-- TikTok coming soon - not linked yet -->
+      <span class="footer-social-disabled" aria-label="TikTok (coming soon)" title="TikTok - coming soon">
+        <svg viewBox="0 0 24 24"><path d="M16.6 2h-3.2v13.9a2.8 2.8 0 1 1-2.4-2.77v-3.24a6.03 6.03 0 1 0 5.6 6.01c0-.13 0-.26-.01-.39a7.4 7.4 0 0 0 4.34 1.39V13.7a4.2 4.2 0 0 1-4.33-4.24V2Z"/></svg>
+      </span>
+    </div>
+  </footer>
+
+  <script src="js/auth.js"></script>
+  <script src="js/reviews.js"></script>
+</body>
+</html>

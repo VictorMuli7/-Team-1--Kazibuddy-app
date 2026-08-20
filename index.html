@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jua Kali - Connecting Skilled Artisans with Customers</title>
+  <meta name="description" content="Jua Kali connects skilled artisans offering everyday services with customers who need them." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="header" id="top">
+    <div class="header-logo">
+      <a href="#top"><h1 class="header-title">Jua Kali☀️</h1></a>
+    </div>
+    <nav class="header-container">
+      <div class="nav-item"><a href="#about">About</a></div>
+      <div class="nav-item"><a href="#services">Services</a></div>
+      <div class="nav-item"><a href="#why">Why Us</a></div>
+      <div class="nav-item"><a href="#steps">How to Join</a></div>
+      <div class="nav-item"><a href="reviews.html">Reviews</a></div>
+      <div class="nav-auth" id="nav-auth-slot"></div>
+    </nav>
+  </header>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-number" id="stat-workers">1,240</span>
+      <span class="stat-label">Workers Registered</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-number" id="stat-jobs">8,530</span>
+      <span class="stat-label">Jobs Completed</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-number">4.8 ⭐</span>
+      <span class="stat-label">Average Rating</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-number">8</span>
+      <span class="stat-label">Service Categories</span>
+    </div>
+  </div>
+
+  <!-- Ad Banner (placeholder) -->
+  <div class="ad-banner ad-banner-leaderboard">
+    <div class="ad-banner-label">Advertisement</div>
+    <div class="ad-banner-slot">728 × 90 Ad Space</div>
+  </div>
+
+  <section id="about" class="card">
+    <h2>About Jua Kali☀️</h2>
+    <p>
+      We connect skilled artisans with customers looking for quality
+      handmade services and products. From plumbing to hair styling, find
+      verified professionals near you — fast, affordable, and reliable.
+    </p>
+  </section>
+
+  <div class="card-container">
+
+    <div id="services" class="card">
+      <h3 class="services-heading">Our Services</h3>
+      <p class="services-subtext">Click any service to book or learn more</p>
+      <div class="services-grid" id="services-grid">
+        <!-- service cards injected by main.js -->
+      </div>
+    </div>
+
+    <div id="why" class="card">
+      <h2>Why Choose Us</h2>
+      <div class="why-grid">
+        <div class="why-item">✔ Verified professionals</div>
+        <div class="why-item">✔ Affordable prices</div>
+        <div class="why-item">✔ Reliable service</div>
+        <div class="why-item">✔ Quality workmanship</div>
+        <div class="why-item">✔ Rated by real customers</div>
+        <div class="why-item">✔ Fast response times</div>
+      </div>
+    </div>
+
+    <div id="steps" class="card">
+      <h2>How to Join Jua Kali</h2>
+      <ol>
+        <li>Create an account</li>
+        <li>Set up your profile</li>
+        <li>List your services and provide proof</li>
+        <li>Start getting customers</li>
+      </ol>
+    </div>
+
+  </div>
+
+  <!-- Service Modal -->
+  <div class="modal-overlay" id="modal-overlay" hidden>
+    <div class="modal" id="service-modal">
+      <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
+      <div class="modal-img-wrap">
+        <img id="modal-img" src="" alt="" />
+      </div>
+      <h2 id="modal-title"></h2>
+      <p id="modal-desc" class="modal-desc"></p>
+      <div class="modal-meta">
+        <span id="modal-rating" class="modal-rating"></span>
+        <span id="modal-price" class="modal-price"></span>
+        <span id="modal-workers" class="modal-workers"></span>
+      </div>
+
+      <div class="form-group" id="modal-date-group" hidden>
+        <label for="modal-date">Preferred date</label>
+        <input type="date" id="modal-date" name="modal-date" />
+      </div>
+      <p class="form-error" id="modal-msg" role="status"></p>
+
+      <div class="modal-actions">
+        <button type="button" id="modal-book-btn" class="btn-modal btn-book">Book Now</button>
+        <a href="reviews.html" class="btn-modal btn-reviews">See Reviews</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sponsors -->
+  <section class="card sponsors-section">
+    <h2>Our Sponsors</h2>
+    <p>Interested in sponsoring Jua Kali? Get your brand in front of thousands of customers and artisans.</p>
+    <div class="sponsors-grid">
+      <div class="sponsor-slot">Sponsor Slot 1</div>
+      <div class="sponsor-slot">Sponsor Slot 2</div>
+      <div class="sponsor-slot">Sponsor Slot 3</div>
+      <div class="sponsor-slot">Sponsor Slot 4</div>
+    </div>
+  </section>
+
+  <!-- Ad Banner (placeholder) -->
+  <div class="ad-banner ad-banner-leaderboard">
+    <div class="ad-banner-label">Advertisement</div>
+    <div class="ad-banner-slot">728 × 90 Ad Space</div>
+  </div>
+
+  <footer class="footer">
+    <p>Contact us: info@juakali.com</p>
+    <p>Phone: +254 700 000 000</p>
+    <div class="footer-social">
+      <a href="https://www.instagram.com/jua_kali_services/" aria-label="Instagram" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.85.07 1.17.05 1.97.24 2.43.4a4.9 4.9 0 0 1 1.77 1.15 4.9 4.9 0 0 1 1.15 1.77c.16.46.35 1.26.4 2.43.07 1.25.07 1.65.07 4.85s0 3.6-.07 4.85c-.05 1.17-.24 1.97-.4 2.43a4.9 4.9 0 0 1-1.15 1.77 4.9 4.9 0 0 1-1.77 1.15c-.46.16-1.26.35-2.43.4-1.25.07-1.65.07-4.85.07s-3.6 0-4.85-.07c-1.17-.05-1.97-.24-2.43-.4a4.9 4.9 0 0 1-1.77-1.15 4.9 4.9 0 0 1-1.15-1.77c-.16-.46-.35-1.26-.4-2.43C2.2 15.6 2.2 15.2 2.2 12s0-3.6.07-4.85c.05-1.17.24-1.97.4-2.43a4.9 4.9 0 0 1 1.15-1.77A4.9 4.9 0 0 1 5.6 1.8c.46-.16 1.26-.35 2.43-.4C9.28 1.33 9.68 1.33 12 1.33Zm0 1.8c-3.15 0-3.52 0-4.76.07-.96.04-1.48.2-1.83.34a2.9 2.9 0 0 0-1.08.7 2.9 2.9 0 0 0-.7 1.08c-.14.35-.3.87-.34 1.83-.06 1.24-.07 1.61-.07 4.76s0 3.52.07 4.76c.04.96.2 1.48.34 1.83.15.4.35.75.7 1.08.33.35.68.55 1.08.7.35.14.87.3 1.83.34 1.24.06 1.61.07 4.76.07s3.52 0 4.76-.07c.96-.04 1.48-.2 1.83-.34.4-.15.75-.35 1.08-.7.35-.33.55-.68.7-1.08.14-.35.3-.87.34-1.83.06-1.24.07-1.61.07-4.76s0-3.52-.07-4.76c-.04-.96-.2-1.48-.34-1.83a2.9 2.9 0 0 0-.7-1.08 2.9 2.9 0 0 0-1.08-.7c-.35-.14-.87-.3-1.83-.34C15.52 4 15.15 4 12 4Zm0 3.05a4.95 4.95 0 1 1 0 9.9 4.95 4.95 0 0 1 0-9.9Zm0 1.8a3.15 3.15 0 1 0 0 6.3 3.15 3.15 0 0 0 0-6.3Zm5.15-2a1.16 1.16 0 1 1 0 2.32 1.16 1.16 0 0 1 0-2.32Z"/></svg>
+      </a>
+      <!-- TikTok coming soon - not linked yet -->
+      <span class="footer-social-disabled" aria-label="TikTok (coming soon)" title="TikTok - coming soon">
+        <svg viewBox="0 0 24 24"><path d="M16.6 2h-3.2v13.9a2.8 2.8 0 1 1-2.4-2.77v-3.24a6.03 6.03 0 1 0 5.6 6.01c0-.13 0-.26-.01-.39a7.4 7.4 0 0 0 4.34 1.39V13.7a4.2 4.2 0 0 1-4.33-4.24V2Z"/></svg>
+      </span>
+    </div>
+  </footer>
+
+  <script src="js/auth.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

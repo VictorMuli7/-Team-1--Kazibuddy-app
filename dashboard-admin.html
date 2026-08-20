@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - Jua Kali</title>
+  <meta name="description" content="Manage Jua Kali users, artisan verification and platform activity." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="header" id="top">
+    <div class="header-logo">
+      <a href="index.html"><h1 class="header-title">Jua Kali☀️</h1></a>
+    </div>
+    <nav class="header-container">
+      <div class="nav-item"><a href="index.html#services">Services</a></div>
+      <div class="nav-item"><a href="reviews.html">Reviews</a></div>
+      <div class="nav-auth" id="nav-auth-slot"></div>
+    </nav>
+  </header>
+
+  <div class="dashboard-wrap">
+
+    <div class="dashboard-hero dashboard-hero-admin">
+      <div class="dashboard-hero-text">
+        <span class="dashboard-role-tag">Admin account</span>
+        <h2 id="welcome-heading">Welcome back</h2>
+        <p>Platform-wide view of users, artisan verification and bookings.</p>
+      </div>
+    </div>
+
+    <div class="dashboard-stats-grid">
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-value" id="stat-total-users">0</div>
+        <div class="dashboard-stat-label">Total users</div>
+      </div>
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-value" id="stat-pending-verification">0</div>
+        <div class="dashboard-stat-label">Artisans pending verification</div>
+      </div>
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-value" id="stat-total-bookings">0</div>
+        <div class="dashboard-stat-label">Total bookings</div>
+      </div>
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-value" id="stat-suspended">0</div>
+        <div class="dashboard-stat-label">Suspended accounts</div>
+      </div>
+    </div>
+
+    <section class="dashboard-section">
+      <div class="dashboard-section-head">
+        <div>
+          <h3>User Management</h3>
+          <p class="dashboard-section-subtext">Verify artisans, suspend or reactivate accounts.</p>
+        </div>
+      </div>
+      <div class="dashboard-filter-row">
+        <div class="filter-group">
+          <label for="role-filter" style="color:#384959;">Filter by role</label>
+          <select id="role-filter">
+            <option value="all">All roles</option>
+            <option value="artisan">Artisans</option>
+            <option value="customer">Customers</option>
+            <option value="admin">Admins</option>
+          </select>
+        </div>
+      </div>
+      <div class="dashboard-table-wrap">
+        <table class="dashboard-table" id="users-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Skill</th>
+              <th>Joined</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="users-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="dashboard-section">
+      <h3>Recent Bookings</h3>
+      <p class="dashboard-section-subtext">Latest activity across the whole platform.</p>
+      <div class="dashboard-table-wrap">
+        <table class="dashboard-table" id="bookings-table">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Artisan</th>
+              <th>Service</th>
+              <th>Date</th>
+              <th>Price</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="bookings-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="footer">
+    <p>Contact us: info@juakali.com</p>
+    <p>Phone: +254 700 000 000</p>
+  </footer>
+
+  <script src="js/auth.js"></script>
+  <script src="js/dashboard-admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Dashboard - Jua Kali</title>
+  <meta name="description" content="Manage your Jua Kali bookings and find new artisans." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="header" id="top">
+    <div class="header-logo">
+      <a href="index.html"><h1 class="header-title">Jua Kali☀️</h1></a>
+    </div>
+    <nav class="header-container">
+      <div class="nav-item"><a href="index.html#services">Browse Services</a></div>
+      <div class="nav-item"><a href="reviews.html">Reviews</a></div>
+      <div class="nav-auth" id="nav-auth-slot"></div>
+    </nav>
+  </header>
+
+  <div class="dashboard-wrap">
+
+    <div class="dashboard-hero dashboard-hero-customer">
+      <div class="dashboard-hero-text">
+        <span class="dashboard-role-tag">Customer account</span>
+        <h2 id="welcome-heading">Welcome back</h2>
+        <p>Find trusted artisans and keep track of every job you've booked.</p>
+      </div>
+      <a href="index.html#services" class="btn-modal btn-book">Book a new service</a>
+    </div>
+
+    <div class="dashboard-stats-grid">
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-value" id="stat-upcoming">0</div>
+        <div class="dashboard-stat-label">Upcoming bookings</div>
+      </div>
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-value" id="stat-pending">0</div>
+        <div class="dashboard-stat-label">Awaiting confirmation</div>
+      </div>
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-value" id="stat-completed">0</div>
+        <div class="dashboard-stat-label">Completed jobs</div>
+      </div>
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-value" id="stat-spent">KES 0</div>
+        <div class="dashboard-stat-label">Total spent</div>
+      </div>
+    </div>
+
+    <section class="dashboard-section">
+      <div class="dashboard-section-head">
+        <div>
+          <h3>My Bookings</h3>
+          <p class="dashboard-section-subtext">Every service you've requested, past and upcoming.</p>
+        </div>
+      </div>
+      <div class="dashboard-table-wrap">
+        <table class="dashboard-table" id="bookings-table">
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>Artisan</th>
+              <th>Date</th>
+              <th>Price</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="bookings-body"></tbody>
+        </table>
+        <p class="dashboard-empty" id="bookings-empty" hidden>You haven't booked a service yet — browse our services to get started.</p>
+      </div>
+    </section>
+
+    <section class="dashboard-section">
+      <h3>Popular services near you</h3>
+      <p class="dashboard-section-subtext">Quick links back to categories other customers love.</p>
+      <div class="chip-row">
+        <span class="chip">Laundry</span>
+        <span class="chip">Home &amp; Office Cleaning</span>
+        <span class="chip">Electrical</span>
+        <span class="chip">Gardening</span>
+        <span class="chip">Hair Styling</span>
+        <span class="chip">Barber</span>
+        <span class="chip">Plumbing</span>
+        <span class="chip">Cooking</span>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="footer">
+    <p>Contact us: info@juakali.com</p>
+    <p>Phone: +254 700 000 000</p>
+  </footer>
+
+  <script src="js/auth.js"></script>
+  <script src="js/dashboard-customer.js"></script>
+</body>
+</html>

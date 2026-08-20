@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Artisan Dashboard - Jua Kali</title>
+  <meta name="description" content="Manage your Jua Kali job requests, earnings and listing." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="header" id="top">
+    <div class="header-logo">
+      <a href="index.html"><h1 class="header-title">Jua Kali☀️</h1></a>
+    </div>
+    <nav class="header-container">
+      <div class="nav-item"><a href="index.html#services">Services</a></div>
+      <div class="nav-item"><a href="reviews.html">Reviews</a></div>
+      <div class="nav-auth" id="nav-auth-slot"></div>
+    </nav>
+  </header>
+
+  <div class="dashboard-wrap">
+
+    <div class="dashboard-hero dashboard-hero-artisan">
+      <div class="dashboard-hero-text">
+        <span class="dashboard-role-tag">Artisan account</span>
+        <h2 id="welcome-heading">Welcome back</h2>
+        <p id="welcome-skill">Manage your job requests and grow your customer base.</p>
+        <div class="dashboard-status-pill">
+          <span class="badge" id="verification-badge"></span>
+        </div>
+      </div>
+    </div>
+
+    <p class="dashboard-empty" id="pending-verification-note" hidden style="text-align:left; background:#fff3cd; color:#7a5b00; padding:12px 16px; border-radius:10px; font-style:normal; margin-top:16px;">
+      Your account is pending verification by our admin team. You can still set up your listing, but you won't appear in search results until you're verified.
+    </p>
+
+    <div class="dashboard-stats-grid">
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-value" id="stat-pending">0</div>
+        <div class="dashboard-stat-label">New requests</div>
+      </div>
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-value" id="stat-upcoming">0</div>
+        <div class="dashboard-stat-label">Accepted / upcoming</div>
+      </div>
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-value" id="stat-completed">0</div>
+        <div class="dashboard-stat-label">Jobs completed</div>
+      </div>
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-value" id="stat-earnings">KES 0</div>
+        <div class="dashboard-stat-label">Total earnings</div>
+      </div>
+    </div>
+
+    <section class="dashboard-section">
+      <div class="dashboard-section-head">
+        <div>
+          <h3>Job Requests</h3>
+          <p class="dashboard-section-subtext">Respond to customers who have booked your services.</p>
+        </div>
+      </div>
+      <div class="dashboard-table-wrap">
+        <table class="dashboard-table" id="jobs-table">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Service</th>
+              <th>Date</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="jobs-body"></tbody>
+        </table>
+        <p class="dashboard-empty" id="jobs-empty" hidden>No job requests yet. Once customers book your services, they'll show up here.</p>
+      </div>
+    </section>
+
+    <section class="dashboard-section">
+      <h3>My Listing</h3>
+      <p class="dashboard-section-subtext">This is what customers see when they view your profile.</p>
+      <form class="dashboard-form" id="listing-form">
+        <div class="dashboard-form-row">
+          <div class="form-group">
+            <label for="listing-skill">Skill / service</label>
+            <input type="text" id="listing-skill" name="skill" disabled />
+          </div>
+          <div class="form-group">
+            <label for="listing-rate">Rate</label>
+            <input type="text" id="listing-rate" name="rate" placeholder="e.g. From KES 500/style" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="listing-bio">Bio / description</label>
+          <textarea id="listing-bio" name="bio" rows="3" placeholder="Tell customers about your experience..."></textarea>
+        </div>
+        <p class="form-error" id="listing-msg" role="status"></p>
+        <button type="submit" class="btn-submit" style="width:auto; padding:0.7rem 1.6rem;">Save listing</button>
+      </form>
+    </section>
+
+  </div>
+
+  <footer class="footer">
+    <p>Contact us: info@juakali.com</p>
+    <p>Phone: +254 700 000 000</p>
+  </footer>
+
+  <script src="js/auth.js"></script>
+  <script src="js/dashboard-artisan.js"></script>
+</body>
+</html>

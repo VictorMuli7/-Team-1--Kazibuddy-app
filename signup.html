@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up - Jua Kali</title>
+  <meta name="description" content="Create your Jua Kali account as a customer or an artisan." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="header" id="top">
+    <div class="header-logo">
+      <a href="index.html"><h1 class="header-title">Jua Kali☀️</h1></a>
+    </div>
+    <nav class="header-container">
+      <div class="nav-item"><a href="#about">About Jua Kali</a></div>
+      <div class="nav-item"><a href="#services">Our Services</a></div>
+      <div class="nav-item"><a href="#why">Why choose Jua Kali</a></div>
+      <div class="nav-item"><a href="#steps">How to join Jua Kali</a></div>
+      <div class="nav-item"><a href="reviews.html">Reviews</a></div>
+      <div class="nav-auth" id="nav-auth-slot"></div>
+    </nav>
+  </header>
+
+  <section class="card signup-card" id="signup">
+    <h2>Create your Jua Kali account</h2>
+    <p>Tell us who you are so we can set up the right account for you.</p>
+
+    <form id="signup-form" novalidate>
+
+      <div class="form-group">
+        <label for="role">I am a</label>
+        <select id="role" name="role" required>
+          <option value="" disabled selected>Select account type</option>
+          <option value="customer">Customer looking for services</option>
+          <option value="artisan">Artisan offering services</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="fullname">Full name</label>
+        <input type="text" id="fullname" name="fullname" required minlength="2" />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" required />
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Phone number</label>
+        <input type="tel" id="phone" name="phone" required pattern="^[0-9+ ]{7,15}$" placeholder="e.g. +254 700 000 000" />
+      </div>
+
+      <!-- Only shown when "Artisan" is selected, controlled by js/signup.js -->
+      <div class="form-group" id="skill-group" hidden>
+        <label for="skill">Skill / service you offer</label>
+        <select id="skill" name="skill">
+          <option value="" disabled selected>Select a skill</option>
+          <option>Laundry</option>
+          <option>Home and Office Cleaning</option>
+          <option>Electrical</option>
+          <option>Gardening</option>
+          <option>Hair Styling</option>
+          <option>Barber</option>
+          <option>Plumbing</option>
+          <option>Cooking</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required minlength="6" />
+      </div>
+
+      <div class="form-group">
+        <label for="confirm-password">Confirm password</label>
+        <input type="password" id="confirm-password" name="confirm-password" required minlength="6" />
+      </div>
+
+      <p class="form-error" id="form-error" role="alert"></p>
+
+      <button type="submit" class="btn-submit">Create account</button>
+    </form>
+
+    <p class="auth-switch">Already have an account? <a href="login.html">Sign in</a></p>
+  </section>
+
+  <footer class="footer">
+    <p>Contact us: info@juakali.com</p>
+    <p>Phone: +254 700 000 000</p>
+  </footer>
+
+  <script src="js/auth.js"></script>
+  <script src="js/signup.js"></script>
+</body>
+</html>
