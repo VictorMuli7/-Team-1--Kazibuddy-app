@@ -1,1 +1,463 @@
+openapi: 3.0.0
 
+info:
+  title: Jua Kali API
+  version: 1.0.0
+
+paths:
+
+  /artisans:
+    get:
+      summary: Get verified artisans and their services
+      parameters:
+        - name: skill
+          in: query
+          required: false
+          schema:
+            type: string
+          example: Plumbing
+        - name: verified
+          in: query
+          required: false
+          schema:
+            type: boolean
+          example: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - ok
+                  - users
+                properties:
+                  ok:
+                    type: boolean
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Artisan'
+              example:
+                ok: true
+                users:
+                  - id: "a101"
+                    role: "artisan"
+                    fullname: "John Kamau"
+                    email: "john@example.com"
+                    phone: "0712345678"
+                    status: "active"
+                    joined: "2026-01-15"
+                    skill: "Plumbing"
+                    verified: true
+                    bio: "Experienced plumber"
+                    rate: "1500"
+
+  /artisans/{id}:
+    get:
+      summary: Get details of a specific artisan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: a101
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - ok
+                  - user
+                properties:
+                  ok:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/Artisan'
+              example:
+                ok: true
+                user:
+                  id: "a101"
+                  role: "artisan"
+                  fullname: "John Kamau"
+                  email: "john@example.com"
+                  phone: "0712345678"
+                  status: "active"
+                  joined: "2026-01-15"
+                  skill: "Plumbing"
+                  verified: true
+                  bio: "Experienced plumber"
+                  rate: "1500"
+
+  /bookings:
+    get:
+      summary: Get bookings and their statuses
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - pending
+              - upcoming
+              - declined
+              - completed
+          example: upcoming
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - ok
+                  - bookings
+                properties:
+                  ok:
+                    type: boolean
+                  bookings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Booking'
+              example:
+                ok: true
+                bookings:
+                  - id: "b101"
+                    customerId: "c101"
+                    customerName: "Mary Wanjiku"
+                    service: "Plumbing"
+                    artisanId: "a101"
+                    artisanName: "John Kamau"
+                    date: "2026-09-10"
+                    status: "upcoming"
+                    price: "1500"
+
+    post:
+      summary: Create a new booking request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBooking'
+            example:
+              serviceTitle: "Plumbing"
+              price: "1500"
+              date: "2026-09-10"
+      responses:
+        '201':
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - ok
+                  - booking
+                properties:
+                  ok:
+                    type: boolean
+                  booking:
+                    $ref: '#/components/schemas/Booking'
+              example:
+                ok: true
+                booking:
+                  id: "b101"
+                  customerId: "c101"
+                  customerName: "Mary Wanjiku"
+                  service: "Plumbing"
+                  artisanId: "a101"
+                  artisanName: "John Kamau"
+                  date: "2026-09-10"
+                  status: "pending"
+                  price: "1500"
+
+  /bookings/{id}/status:
+    get:
+      summary: Get the status of a specific booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: b101
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - ok
+                  - status
+                properties:
+                  ok:
+                    type: boolean
+                  status:
+                    type: string
+                    enum:
+                      - pending
+                      - upcoming
+                      - declined
+                      - completed
+              example:
+                ok: true
+                status: "upcoming"
+
+    patch:
+      summary: Update the status of a booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: b101
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBookingStatus'
+            example:
+              status: "completed"
+      responses:
+        '200':
+          description: Booking status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - ok
+                  - booking
+                properties:
+                  ok:
+                    type: boolean
+                  booking:
+                    $ref: '#/components/schemas/Booking'
+              example:
+                ok: true
+                booking:
+                  id: "b101"
+                  customerId: "c101"
+                  customerName: "Mary Wanjiku"
+                  service: "Plumbing"
+                  artisanId: "a101"
+                  artisanName: "John Kamau"
+                  date: "2026-09-10"
+                  status: "completed"
+                  price: "1500"
+
+  /services:
+    get:
+      summary: Get available services and their prices
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - ok
+                  - name
+                properties:
+                  ok:
+                    type: boolean
+                  services:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Service'
+              example:
+                ok: true
+                services:
+                  - id: "s101"
+                    name: "Plumbing"
+                    price: "1500"
+                  - id: "s102"
+                    name: "Carpentry"
+                    price: "2000"
+
+  /services/{id}:
+    get:
+      summary: Get details and price of a specific service
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: s101
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - ok
+                  - name
+                properties:
+                  ok:
+                    type: boolean
+                  service:
+                    $ref: '#/components/schemas/Service'
+              example:
+                ok: true
+                service:
+                  id: "s101"
+                  name: "Plumbing"
+                  price: "1500"
+
+
+components:
+
+  schemas:
+
+    Artisan:
+      type: object
+      required:
+        - id
+        - role
+        - fullname
+        - email
+        - status
+        - joined
+        - verified
+      properties:
+        id:
+          type: string
+          example: "a101"
+        role:
+          type: string
+          example: "artisan"
+        fullname:
+          type: string
+          example: "John Kamau"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        phone:
+          type: string
+          example: "0712345678"
+        status:
+          type: string
+          example: "active"
+        joined:
+          type: string
+          example: "2026-01-15"
+        skill:
+          type: string
+          example: "Plumbing"
+        verified:
+          type: boolean
+          example: true
+        bio:
+          type: string
+          example: "Experienced plumber"
+        rate:
+          type: string
+          example: "1500"
+
+    Booking:
+      type: object
+      required:
+        - id
+        - customerId
+        - customerName
+        - service
+        - artisanId
+        - artisanName
+        - date
+        - status
+      properties:
+        id:
+          type: string
+          example: "b101"
+        customerId:
+          type: string
+          example: "c101"
+        customerName:
+          type: string
+          example: "Mary Wanjiku"
+        service:
+          type: string
+          example: "Plumbing"
+        artisanId:
+          type: string
+          example: "a101"
+        artisanName:
+          type: string
+          example: "John Kamau"
+        date:
+          type: string
+          example: "2026-09-10"
+        status:
+          type: string
+          enum:
+            - pending
+            - upcoming
+            - declined
+            - completed
+          example: "pending"
+        price:
+          type: string
+          example: "1500"
+
+    CreateBooking:
+      type: object
+      required:
+        - serviceTitle
+        - date
+      properties:
+        serviceTitle:
+          type: string
+          example: "Plumbing"
+        price:
+          type: string
+          example: "1500"
+        date:
+          type: string
+          example: "2026-09-10"
+
+    UpdateBookingStatus:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - upcoming
+            - declined
+            - completed
+          example: "completed"
+
+    Service:
+      type: object
+      required:
+        - id
+        - name
+        - price
+      properties:
+        id:
+          type: string
+          example: "s101"
+        name:
+          type: string
+          example: "Plumbing"
+        price:
+          type: string
+          example: "1500"
