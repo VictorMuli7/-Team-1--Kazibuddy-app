@@ -1,0 +1,19 @@
+{
+  "name": "juakali-server",
+  "version": "1.0.0",
+  "description": "Jua Kali backend API + static server (SQLite database)",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3-session-store": "^0.1.0",
+    "cors": "^2.8.5"
+  }
+}
