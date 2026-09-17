@@ -9,6 +9,7 @@ const { router: authRouter } = require("./routes/auth");
 const usersRouter = require("./routes/users");
 const bookingsRouter = require("./routes/bookings");
 const reviewsRouter = require("./routes/reviews");
+const artisansRouter = require("./routes/artisans");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,6 +36,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/bookings", bookingsRouter);
 app.use("/api/reviews", reviewsRouter);
+app.use("/api/artisans", artisansRouter);
 
 // Serve the frontend (index.html, css/, js/, assets/) as static files
 app.use(express.static(PUBLIC_DIR));
@@ -43,3 +45,4 @@ app.listen(PORT, () => {
   console.log(`Jua Kali server running at http://localhost:${PORT}`);
   console.log(`Database file: ${path.join(__dirname, "juakali.db")}`);
 });
+
