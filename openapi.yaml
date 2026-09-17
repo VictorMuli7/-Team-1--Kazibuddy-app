@@ -6,10 +6,10 @@ info:
   description: >
     Every path is marked either IMPLEMENTED (matches real code in
     routes/auth.js, routes/users.js, routes/bookings.js, routes/reviews.js
-    exactly) or PLANNED (added from ENDPOINT_LIST.md to satisfy the organ
-    donation app's stated needs — not yet built in server/). Anything marked
-    PLANNED still needs real route handlers written before a consumer can
-    actually call it; this contract describes the target shape only.
+    exactly) or newly built to satisfy ENDPOINT_LIST.md's needs for the
+    organ donation app consumer (artisans, and the booking-status
+    sub-resource). All paths below are implemented in server/ as of this
+    version.
 
 servers:
   - url: http://localhost:3000
@@ -297,15 +297,15 @@ paths:
 
   /api/artisans:
     get:
-      summary: "[PLANNED] Return verified artisans and their services"
+      summary: "Return verified artisans and their services"
       description: >
-        Not yet implemented in server/ — no route currently exists at this
-        path. Added from ENDPOINT_LIST.md to satisfy: "The organ donation app
-        needs to read verified artisans and their services in order to
-        identify workers who can provide services when the hospital needs
-        them." Also satisfies the pricing need (rate is included per artisan)
-        without a separate /services endpoint — see ENDPOINT_LIST.md's note
-        on why a standalone services catalog would misrepresent pricing.
+        Implemented in server/routes/artisans.js. Satisfies: "The organ
+        donation app needs to read verified artisans and their services in
+        order to identify workers who can provide services when the hospital
+        needs them." Also satisfies the pricing need (rate is included per
+        artisan) without a separate /services endpoint — see
+        ENDPOINT_LIST.md's note on why a standalone services catalog would
+        misrepresent pricing.
       security: []
       parameters:
         - name: skill
@@ -338,8 +338,8 @@ paths:
 
   /api/artisans/{id}:
     get:
-      summary: "[PLANNED] Return details of a specific artisan"
-      description: Not yet implemented in server/. Same need as GET /api/artisans, scoped to one artisan.
+      summary: "Return details of a specific artisan"
+      description: Implemented in server/routes/artisans.js. Same need as GET /api/artisans, scoped to one artisan.
       security: []
       parameters:
         - name: id
@@ -366,13 +366,13 @@ paths:
 
   /api/bookings/{id}:
     get:
-      summary: "[PLANNED] Return the full record for one booking"
+      summary: "Return the full record for one booking"
       description: >
-        Not yet implemented — currently only GET /api/bookings (the list,
-        role-scoped) exists; there's no single-booking GET. Added per
-        ENDPOINT_LIST.md as a general-read capability, not tied to one
-        specific need statement — mirrors the /api/artisans +
-        /api/artisans/{id} collection/item pattern.
+        Implemented in server/routes/bookings.js. Added per ENDPOINT_LIST.md
+        as a general-read capability, not tied to one specific need
+        statement — mirrors the /api/artisans + /api/artisans/{id}
+        collection/item pattern. Public by design; see the note in
+        bookings.js about the customerName privacy question this raises.
       security: []
       parameters:
         - name: id
@@ -399,16 +399,16 @@ paths:
 
   /api/bookings/{id}/status:
     get:
-      summary: "[PLANNED] Return only a booking's status"
+      summary: "Return only a booking's status"
       description: >
-        Not yet implemented. Added per ENDPOINT_LIST.md's design decision to
-        keep status as its own nested sub-resource (the state genuinely
-        belongs to one specific booking, same reasoning as /users/{id}/tasks
-        from the lecture), rather than requiring the organ donation app to
-        fetch the whole booking record just to check accept/decline status.
-        Satisfies: "The organ donation app needs to read actions taken by the
-        artisan (accepted or declined) in order to identify workers who have
-        agreed to perform a particular service."
+        Implemented in server/routes/bookings.js. Kept as its own nested
+        sub-resource (the state genuinely belongs to one specific booking,
+        same reasoning as /users/{id}/tasks from the lecture), rather than
+        requiring the organ donation app to fetch the whole booking record
+        just to check accept/decline status. Satisfies: "The organ donation
+        app needs to read actions taken by the artisan (accepted or
+        declined) in order to identify workers who have agreed to perform a
+        particular service."
       security: []
       parameters:
         - name: id
@@ -438,18 +438,14 @@ paths:
           $ref: '#/components/responses/NotFound'
 
     patch:
-      summary: "[PLANNED] Update only a booking's status"
+      summary: "Update only a booking's status"
       description: >
-        Not yet implemented. Requires artisan auth — this is the artisan's
-        own accept/decline/complete action, not something the external
-        consumer performs. (Corrected from an earlier draft that mistakenly
-        marked this security: [] / public — the organ donation app only
-        reads this data via the GET above; it doesn't write it.) NOTE: this
-        duplicates what the general PATCH /api/bookings/{id} already does
-        (that endpoint's real implementation updates the status field
-        directly). Decision made: the dedicated /status route becomes the
-        one real way to change status; the general PATCH stops accepting
-        status changes once this exists — see the implementation below.
+        Implemented in server/routes/bookings.js. Requires artisan auth —
+        this is the artisan's own accept/decline/complete action, not
+        something the external consumer performs. This is now the one real
+        way to change a booking's status; the old general
+        PATCH /api/bookings/{id} was removed to avoid two routes doing the
+        same job.
       parameters:
         - name: id
           in: path
