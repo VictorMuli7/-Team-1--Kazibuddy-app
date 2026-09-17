@@ -113,7 +113,7 @@ export default function DashboardArtisan() {
     setError('');
 
     try {
-      const response = await fetch(`${API_URL}/bookings/${id}`, {
+      const response = await fetch(`${API_URL}/bookings/${id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -249,8 +249,8 @@ export default function DashboardArtisan() {
             <div className="dashboard-status-pill">
               <span
                 className={`badge ${user.verified
-                    ? 'badge-verified'
-                    : 'badge-unverified'
+                  ? 'badge-verified'
+                  : 'badge-unverified'
                   }`}
                 id="verification-badge"
               >

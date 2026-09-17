@@ -1,14 +1,312 @@
 openapi: 3.0.0
 
 info:
-  title: Kazibuddy API
-  version: 1.0.0
+  title: Jua Kali API
+  version: 2.1.0
+  description: >
+    Every path is marked either IMPLEMENTED (matches real code in
+    routes/auth.js, routes/users.js, routes/bookings.js, routes/reviews.js
+    exactly) or PLANNED (added from ENDPOINT_LIST.md to satisfy the organ
+    donation app's stated needs — not yet built in server/). Anything marked
+    PLANNED still needs real route handlers written before a consumer can
+    actually call it; this contract describes the target shape only.
+
+servers:
+  - url: http://localhost:3000
+
+security:
+  - sessionAuth: []
 
 paths:
 
-  /artisans:
+  /api/auth/register:
+    post:
+      summary: Create a new account (customer or artisan)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              role: customer
+              fullname: Brian Otieno
+              email: brian@example.com
+              phone: "+254700000010"
+              password: Passw0rd!
+      responses:
+        '200':
+          description: Account created; session cookie is set
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, user]
+                properties:
+                  ok:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: An account with that email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                ok: false
+                error: "An account with that email already exists."
+
+  /api/auth/login:
+    post:
+      summary: Sign in with email and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Signed in; session cookie is set
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, user]
+                properties:
+                  ok:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: No account with that email, or incorrect password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Account is suspended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                ok: false
+                error: "This account has been suspended. Contact support."
+
+  /api/auth/logout:
+    post:
+      summary: End the current session
+      security: []
+      responses:
+        '200':
+          description: Session destroyed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+
+  /api/auth/session:
     get:
-      summary: Get verified artisans and their services
+      summary: Check whether a session is currently active
+      security: []
+      responses:
+        '200':
+          description: Current session, or null if not signed in
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, session]
+                properties:
+                  ok:
+                    type: boolean
+                  session:
+                    nullable: true
+                    $ref: '#/components/schemas/SessionUser'
+
+  /api/users:
+    get:
+      summary: List all users (admin only)
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, users]
+                properties:
+                  ok:
+                    type: boolean
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/me:
+    get:
+      summary: Get the signed-in user's own profile
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, user]
+                properties:
+                  ok:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      summary: Update your own artisan listing (rate and bio) — artisan only
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOwnListing'
+      responses:
+        '200':
+          description: Listing updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, user]
+                properties:
+                  ok:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/{id}:
+    patch:
+      summary: Verify, suspend, or reactivate a user — admin only
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: u-a2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserAdmin'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, user]
+                properties:
+                  ok:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/bookings:
+    get:
+      summary: List bookings, scoped to the signed-in user's role
+      description: >
+        Admins see every booking. Artisans see only bookings assigned to them.
+        Customers see only their own bookings. The scoping happens server-side —
+        there is no query parameter for this.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, bookings]
+                properties:
+                  ok:
+                    type: boolean
+                  bookings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Booking'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create a new booking request — customer only
+      description: >
+        The server assigns the artisan automatically (preferring a verified,
+        active artisan whose skill matches serviceTitle). The caller does not
+        choose an artisan directly.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBooking'
+      responses:
+        '200':
+          description: Booking created, status "pending"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, booking]
+                properties:
+                  ok:
+                    type: boolean
+                  booking:
+                    $ref: '#/components/schemas/Booking'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: No artisan is currently available for this service
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/artisans:
+    get:
+      summary: "[PLANNED] Return verified artisans and their services"
+      description: >
+        Not yet implemented in server/ — no route currently exists at this
+        path. Added from ENDPOINT_LIST.md to satisfy: "The organ donation app
+        needs to read verified artisans and their services in order to
+        identify workers who can provide services when the hospital needs
+        them." Also satisfies the pricing need (rate is included per artisan)
+        without a separate /services endpoint — see ENDPOINT_LIST.md's note
+        on why a standalone services catalog would misrepresent pricing.
+      security: []
       parameters:
         - name: skill
           in: query
@@ -29,41 +327,27 @@ paths:
             application/json:
               schema:
                 type: object
-                required:
-                  - ok
-                  - users
+                required: [ok, artisans]
                 properties:
                   ok:
                     type: boolean
-                  users:
+                  artisans:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Artisan'
-              example:
-                ok: true
-                users:
-                  - id: "a101"
-                    role: "artisan"
-                    fullname: "John Kamau"
-                    email: "john@example.com"
-                    phone: "0712345678"
-                    status: "active"
-                    joined: "2026-01-15"
-                    skill: "Plumbing"
-                    verified: true
-                    bio: "Experienced plumber"
-                    rate: "1500"
+                      $ref: '#/components/schemas/ArtisanPublic'
 
-  /artisans/{id}:
+  /api/artisans/{id}:
     get:
-      summary: Get details of a specific artisan
+      summary: "[PLANNED] Return details of a specific artisan"
+      description: Not yet implemented in server/. Same need as GET /api/artisans, scoped to one artisan.
+      security: []
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: string
-          example: a101
+          example: u-artisan
       responses:
         '200':
           description: Successful response
@@ -71,44 +355,32 @@ paths:
             application/json:
               schema:
                 type: object
-                required:
-                  - ok
-                  - user
+                required: [ok, artisan]
                 properties:
                   ok:
                     type: boolean
-                  user:
-                    $ref: '#/components/schemas/Artisan'
-              example:
-                ok: true
-                user:
-                  id: "a101"
-                  role: "artisan"
-                  fullname: "John Kamau"
-                  email: "john@example.com"
-                  phone: "0712345678"
-                  status: "active"
-                  joined: "2026-01-15"
-                  skill: "Plumbing"
-                  verified: true
-                  bio: "Experienced plumber"
-                  rate: "1500"
+                  artisan:
+                    $ref: '#/components/schemas/ArtisanPublic'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
-  /bookings:
+  /api/bookings/{id}:
     get:
-      summary: Get bookings and their statuses
+      summary: "[PLANNED] Return the full record for one booking"
+      description: >
+        Not yet implemented — currently only GET /api/bookings (the list,
+        role-scoped) exists; there's no single-booking GET. Added per
+        ENDPOINT_LIST.md as a general-read capability, not tied to one
+        specific need statement — mirrors the /api/artisans +
+        /api/artisans/{id} collection/item pattern.
+      security: []
       parameters:
-        - name: status
-          in: query
-          required: false
+        - name: id
+          in: path
+          required: true
           schema:
             type: string
-            enum:
-              - pending
-              - upcoming
-              - declined
-              - completed
-          example: upcoming
+          example: b1
       responses:
         '200':
           description: Successful response
@@ -116,79 +388,35 @@ paths:
             application/json:
               schema:
                 type: object
-                required:
-                  - ok
-                  - bookings
-                properties:
-                  ok:
-                    type: boolean
-                  bookings:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Booking'
-              example:
-                ok: true
-                bookings:
-                  - id: "b101"
-                    customerId: "c101"
-                    customerName: "Mary Wanjiku"
-                    service: "Plumbing"
-                    artisanId: "a101"
-                    artisanName: "John Kamau"
-                    date: "2026-09-10"
-                    status: "upcoming"
-                    price: "1500"
-
-    post:
-      summary: Create a new booking request
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateBooking'
-            example:
-              serviceTitle: "Plumbing"
-              price: "1500"
-              date: "2026-09-10"
-      responses:
-        '201':
-          description: Booking created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - ok
-                  - booking
+                required: [ok, booking]
                 properties:
                   ok:
                     type: boolean
                   booking:
                     $ref: '#/components/schemas/Booking'
-              example:
-                ok: true
-                booking:
-                  id: "b101"
-                  customerId: "c101"
-                  customerName: "Mary Wanjiku"
-                  service: "Plumbing"
-                  artisanId: "a101"
-                  artisanName: "John Kamau"
-                  date: "2026-09-10"
-                  status: "pending"
-                  price: "1500"
+        '404':
+          $ref: '#/components/responses/NotFound'
 
-  /bookings/{id}/status:
+  /api/bookings/{id}/status:
     get:
-      summary: Get the status of a specific booking
+      summary: "[PLANNED] Return only a booking's status"
+      description: >
+        Not yet implemented. Added per ENDPOINT_LIST.md's design decision to
+        keep status as its own nested sub-resource (the state genuinely
+        belongs to one specific booking, same reasoning as /users/{id}/tasks
+        from the lecture), rather than requiring the organ donation app to
+        fetch the whole booking record just to check accept/decline status.
+        Satisfies: "The organ donation app needs to read actions taken by the
+        artisan (accepted or declined) in order to identify workers who have
+        agreed to perform a particular service."
+      security: []
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: string
-          example: b101
+          example: b1
       responses:
         '200':
           description: Successful response
@@ -196,71 +424,73 @@ paths:
             application/json:
               schema:
                 type: object
-                required:
-                  - ok
-                  - status
+                required: [ok, status]
                 properties:
                   ok:
                     type: boolean
                   status:
                     type: string
-                    enum:
-                      - pending
-                      - upcoming
-                      - declined
-                      - completed
+                    enum: [pending, upcoming, declined, completed]
               example:
                 ok: true
-                status: "upcoming"
+                status: upcoming
+        '404':
+          $ref: '#/components/responses/NotFound'
 
     patch:
-      summary: Update the status of a booking
+      summary: "[PLANNED] Update only a booking's status"
+      description: >
+        Not yet implemented. Requires artisan auth — this is the artisan's
+        own accept/decline/complete action, not something the external
+        consumer performs. (Corrected from an earlier draft that mistakenly
+        marked this security: [] / public — the organ donation app only
+        reads this data via the GET above; it doesn't write it.) NOTE: this
+        duplicates what the general PATCH /api/bookings/{id} already does
+        (that endpoint's real implementation updates the status field
+        directly). Decision made: the dedicated /status route becomes the
+        one real way to change status; the general PATCH stops accepting
+        status changes once this exists — see the implementation below.
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: string
-          example: b101
+          example: b1
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateBookingStatus'
-            example:
-              status: "completed"
       responses:
         '200':
-          description: Booking status updated successfully
+          description: Booking status updated
           content:
             application/json:
               schema:
                 type: object
-                required:
-                  - ok
-                  - booking
+                required: [ok, booking]
                 properties:
                   ok:
                     type: boolean
                   booking:
                     $ref: '#/components/schemas/Booking'
-              example:
-                ok: true
-                booking:
-                  id: "b101"
-                  customerId: "c101"
-                  customerName: "Mary Wanjiku"
-                  service: "Plumbing"
-                  artisanId: "a101"
-                  artisanName: "John Kamau"
-                  date: "2026-09-10"
-                  status: "completed"
-                  price: "1500"
+        '400':
+          description: Invalid status value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
-  /services:
+  /api/reviews:
     get:
-      summary: Get available services and their prices
+      summary: List all reviews
+      security: []
       responses:
         '200':
           description: Successful response
@@ -268,65 +498,59 @@ paths:
             application/json:
               schema:
                 type: object
-                required:
-                  - ok
-                  - name
+                required: [ok, reviews]
                 properties:
                   ok:
                     type: boolean
-                  services:
+                  reviews:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Service'
-              example:
-                ok: true
-                services:
-                  - id: "s101"
-                    name: "Plumbing"
-                    price: "1500"
-                  - id: "s102"
-                    name: "Carpentry"
-                    price: "2000"
+                      $ref: '#/components/schemas/Review'
 
-  /services/{id}:
-    get:
-      summary: Get details and price of a specific service
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: s101
+    post:
+      summary: Submit a new review
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReview'
       responses:
         '200':
-          description: Successful response
+          description: Review created
           content:
             application/json:
               schema:
                 type: object
-                required:
-                  - ok
-                  - name
+                required: [ok, review]
                 properties:
                   ok:
                     type: boolean
-                  service:
-                    $ref: '#/components/schemas/Service'
-              example:
-                ok: true
-                service:
-                  id: "s101"
-                  name: "Plumbing"
-                  price: "1500"
-
+                  review:
+                    $ref: '#/components/schemas/Review'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
 components:
 
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: connect.sid
+      description: >
+        express-session cookie, set automatically on successful login or
+        registration. Swagger UI will send it automatically once you've
+        logged in through the browser the "Try it out" requests share
+        cookies with — a separate REST client (Postman etc.) needs
+        "withCredentials"/cookie handling turned on explicitly.
+
   schemas:
 
-    Artisan:
+    User:
       type: object
+      description: The shape returned by every endpoint that includes a user object. password_hash is never included.
       required:
         - id
         - role
@@ -338,38 +562,143 @@ components:
       properties:
         id:
           type: string
-          example: "a101"
+          example: "u-artisan"
         role:
           type: string
+          enum: [admin, customer, artisan]
           example: "artisan"
         fullname:
           type: string
-          example: "John Kamau"
+          example: "Faith Wanjiru"
         email:
           type: string
           format: email
-          example: "john@example.com"
+          example: "artisan@juakali.com"
         phone:
           type: string
-          example: "0712345678"
+          nullable: true
+          example: "+254 700 000 003"
         status:
           type: string
           example: "active"
         joined:
           type: string
-          example: "2026-01-15"
+          format: date
+          example: "2024-02-14"
         skill:
           type: string
-          example: "Plumbing"
+          nullable: true
+          example: "Hair Styling"
         verified:
           type: boolean
           example: true
         bio:
           type: string
-          example: "Experienced plumber"
+          nullable: true
+          example: "Braids, perms, treatments and cuts."
         rate:
           type: string
-          example: "1500"
+          nullable: true
+          example: "From KES 500/style"
+
+    ArtisanPublic:
+      type: object
+      description: >
+        Deliberately narrower than the full User schema — this is what an
+        external consumer (the organ donation app) sees, not what an admin
+        sees. Excludes email and account status, which are internal /
+        customer-facing concerns, not relevant to "find a worker for a job."
+        This is a judgment call, not something ENDPOINT_LIST.md specified
+        field-by-field — worth the team confirming before this gets built.
+      required: [id, fullname, skill, verified]
+      properties:
+        id:
+          type: string
+          example: "u-artisan"
+        fullname:
+          type: string
+          example: "Faith Wanjiru"
+        phone:
+          type: string
+          nullable: true
+          example: "+254 700 000 003"
+        skill:
+          type: string
+          nullable: true
+          example: "Hair Styling"
+        verified:
+          type: boolean
+          example: true
+        bio:
+          type: string
+          nullable: true
+          example: "Braids, perms, treatments and cuts."
+        rate:
+          type: string
+          nullable: true
+          example: "From KES 500/style"
+
+    SessionUser:
+      type: object
+      description: The smaller shape stored in the session and returned by GET /api/auth/session.
+      required: [id, role, fullname, email]
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+          enum: [admin, customer, artisan]
+        fullname:
+          type: string
+        email:
+          type: string
+          format: email
+
+    RegisterRequest:
+      type: object
+      required: [role, fullname, email, password]
+      properties:
+        role:
+          type: string
+          enum: [customer, artisan]
+        fullname:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        password:
+          type: string
+        skill:
+          type: string
+          description: Required when role is "artisan"; ignored otherwise.
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    UpdateOwnListing:
+      type: object
+      properties:
+        rate:
+          type: string
+        bio:
+          type: string
+
+    UpdateUserAdmin:
+      type: object
+      properties:
+        verified:
+          type: boolean
+        status:
+          type: string
 
     Booking:
       type: object
@@ -385,79 +714,138 @@ components:
       properties:
         id:
           type: string
-          example: "b101"
+          example: "b1"
         customerId:
           type: string
-          example: "c101"
+          example: "u-customer"
         customerName:
           type: string
-          example: "Mary Wanjiku"
+          example: "Brian Otieno"
         service:
           type: string
-          example: "Plumbing"
+          example: "Hair Styling"
         artisanId:
           type: string
-          example: "a101"
+          example: "u-artisan"
         artisanName:
           type: string
-          example: "John Kamau"
+          example: "Faith Wanjiru"
         date:
           type: string
-          example: "2026-09-10"
+          format: date
+          example: "2026-07-14"
         status:
           type: string
-          enum:
-            - pending
-            - upcoming
-            - declined
-            - completed
-          example: "pending"
+          enum: [pending, upcoming, declined, completed]
+          example: "upcoming"
         price:
           type: string
-          example: "1500"
+          nullable: true
+          example: "KES 500"
 
     CreateBooking:
       type: object
-      required:
-        - serviceTitle
-        - date
+      required: [serviceTitle, date]
       properties:
         serviceTitle:
           type: string
-          example: "Plumbing"
+          example: "Hair Styling"
         price:
           type: string
-          example: "1500"
+          example: "KES 500"
         date:
           type: string
-          example: "2026-09-10"
+          format: date
+          example: "2026-09-20"
 
     UpdateBookingStatus:
       type: object
-      required:
-        - status
+      required: [status]
       properties:
         status:
           type: string
-          enum:
-            - upcoming
-            - declined
-            - completed
+          enum: [upcoming, declined, completed]
           example: "completed"
 
-    Service:
+    Review:
       type: object
-      required:
-        - id
-        - name
-        - price
+      required: [id, name, category, stars, date, text]
       properties:
         id:
-          type: string
-          example: "s101"
+          type: integer
+          example: 1
         name:
           type: string
-          example: "Plumbing"
-        price:
+          example: "Amina W."
+        category:
           type: string
-          example: "1500"
+          example: "Laundry"
+        stars:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        date:
+          type: string
+          format: date
+          example: "2025-06-20"
+        text:
+          type: string
+          example: "Absolutely fantastic! My clothes came back perfectly clean."
+
+    CreateReview:
+      type: object
+      required: [name, category, stars, text]
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        stars:
+          type: integer
+          minimum: 1
+          maximum: 5
+        text:
+          type: string
+          minLength: 10
+
+    Error:
+      type: object
+      description: >
+        The real error shape used across every route in this codebase.
+        Note the field is "error", not "message" — the Week 4 contract
+        had this wrong.
+      required: [ok, error]
+      properties:
+        ok:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Not authorized."
+
+  responses:
+
+    BadRequest:
+      description: The request was malformed or missing required fields
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Not signed in, or signed in with the wrong role for this action
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            ok: false
+            error: "Not authorized."
+
+    NotFound:
+      description: The requested resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
