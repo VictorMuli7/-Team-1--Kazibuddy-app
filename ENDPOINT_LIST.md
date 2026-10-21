@@ -7,6 +7,9 @@
 | GET | /bookings/{id}/status | Return a specific booking's status — `pending`, `upcoming` (accepted), `declined`, or `completed` | "The organ donation app needs to read actions taken by the artisan (accepted or declined) in order to identify workers who have agreed to perform a particular service." |
 | POST | /bookings | Create a new booking request for an artisan | Supports the booking workflow that produces the accept/decline actions the need above depends on |
 | PATCH | /bookings/{id}/status | Update a booking's status to `upcoming`, `declined`, or `completed` | Write-side counterpart of the same need above |
+| PATCH | /users/me/blood-info | Artisan updates their own `blood_type` (`A`, `B`, `AB`, `O`) and `rhesus_factor` (`positive`, `negative`); both required. Artisan-only | Not from the original need statements — added with the blood type / rhesus factor field on artisan signup, so artisans can correct it after registering |
+| GET | /donors | List artisans who have given a blood group, filterable with `?blood_type=O&rhesus_factor=positive`. Returns `id`, `fullname`, `phone`, `skill`, `verified`, `blood_type`, `rhesus_factor`. Admin-only; suspended artisans excluded | Not from the original need statements — added so an admin can find artisans of a particular blood group |
+| GET | /donors/summary | Count of artisans per blood group, plus a `total`. Admin-only | Not from the original need statements — overview of the same data as `/donors` |
 
 **Note on pricing (Need 3):** *"The organ donation app needs to read the prices
 charged by the artisan in order to compare service costs and select a
@@ -40,3 +43,15 @@ every path and example above uses the corrected value.
   `/status` sub-path to the real routes rather than reuse the existing
   general update endpoint. That implementation step is separate from this
   document and hasn't happened yet.
+- **Blood type and rhesus factor are stored on the `users` table** as
+  `blood_type` and `rhesus_factor`, collected at artisan signup
+  (`POST /auth/register`, required for artisans, ignored for customers).
+  Allowed values are `A`, `B`, `AB`, `O` and `positive`, `negative`; the
+  database rejects anything else.
+- **Blood group is health information, so it is deliberately not returned by
+  `/artisans` or `/artisans/{id}`.** Those endpoints are public and return a
+  fixed list of fields. Blood group is only visible to the artisan
+  themselves (`GET /users/me`) and to admins (`GET /users`, `/donors`,
+  `/donors/summary`). If the organ donation app needs it, that should be a
+  team decision made deliberately, not a side effect of editing the public
+  artisan response.
