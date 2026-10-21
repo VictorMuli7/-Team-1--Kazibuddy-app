@@ -23,6 +23,13 @@ const skillOptions = [
   'Cooking',
 ];
 
+const bloodTypeOptions = ['A', 'B', 'AB', 'O'];
+
+const rhesusOptions = [
+  { value: 'positive', label: 'Positive (+)' },
+  { value: 'negative', label: 'Negative (−)' },
+];
+
 const API_URL = 'http://localhost:3000/api';
 
 export default function Signup() {
@@ -31,6 +38,8 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [skill, setSkill] = useState('');
+  const [bloodType, setBloodType] = useState('');
+  const [rhesusFactor, setRhesusFactor] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -73,7 +82,7 @@ export default function Signup() {
       !phoneValid ||
       password.length < 6 ||
       confirmPassword.length < 6 ||
-      (isArtisan && !skill)
+      (isArtisan && (!skill || !bloodType || !rhesusFactor))
     ) {
       setError('Please fill in all required fields correctly.');
       return;
@@ -100,6 +109,8 @@ export default function Signup() {
           phone: phone.trim(),
           password,
           skill: isArtisan ? skill : null,
+          blood_type: isArtisan ? bloodType : null,
+          rhesus_factor: isArtisan ? rhesusFactor : null,
         }),
       });
 
@@ -211,6 +222,7 @@ export default function Signup() {
           </div>
 
           {isArtisan && (
+            <>
             <div className="form-group" id="skill-group">
               <label htmlFor="skill">
                 Skill / service you offer
@@ -234,6 +246,51 @@ export default function Signup() {
                 ))}
               </select>
             </div>
+
+            <div className="form-group" id="blood-type-group">
+              <label htmlFor="blood-type">Blood type</label>
+
+              <select
+                id="blood-type"
+                name="blood_type"
+                required
+                value={bloodType}
+                onChange={(e) => setBloodType(e.target.value)}
+              >
+                <option value="" disabled>
+                  Select your blood type
+                </option>
+
+                {bloodTypeOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group" id="rhesus-group">
+              <label htmlFor="rhesus-factor">Rhesus factor (Rh)</label>
+
+              <select
+                id="rhesus-factor"
+                name="rhesus_factor"
+                required
+                value={rhesusFactor}
+                onChange={(e) => setRhesusFactor(e.target.value)}
+              >
+                <option value="" disabled>
+                  Select your rhesus factor
+                </option>
+
+                {rhesusOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            </>
           )}
 
           <div className="form-group">

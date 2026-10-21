@@ -4,6 +4,9 @@ const db = require("../db");
 
 const router = express.Router();
 
+const BLOOD_TYPES = ["A", "B", "AB", "O"];
+const RHESUS_FACTORS = ["positive", "negative"];
+
 function toSessionUser(row) {
   return { id: row.id, role: row.role, fullname: row.fullname, email: row.email };
 }
@@ -16,7 +19,7 @@ function toPublicUser(row) {
 
 /* ---------- POST /api/auth/register ---------- */
 router.post("/register", (req, res) => {
-  const { role, fullname, email, phone, password, skill } = req.body || {};
+  const { role, fullname, email, phone, password, skill, blood_type, rhesus_factor } = req.body || {};
 
   if (!role || !["customer", "artisan"].includes(role)) {
     return res.status(400).json({ ok: false, error: "Please choose a valid account type." });
@@ -26,6 +29,12 @@ router.post("/register", (req, res) => {
   }
   if (role === "artisan" && !skill) {
     return res.status(400).json({ ok: false, error: "Please select your skill." });
+  }
+  if (role === "artisan" && !BLOOD_TYPES.includes(blood_type)) {
+    return res.status(400).json({ ok: false, error: "Please select your blood type." });
+  }
+  if (role === "artisan" && !RHESUS_FACTORS.includes(rhesus_factor)) {
+    return res.status(400).json({ ok: false, error: "Please select your rhesus factor." });
   }
 
   const existing = db.prepare("SELECT id FROM users WHERE lower(email) = lower(?)").get(email);
@@ -45,11 +54,13 @@ router.post("/register", (req, res) => {
     verified: 0,
     bio: role === "artisan" ? "" : null,
     rate: role === "artisan" ? "Not set yet" : null,
+    blood_type: role === "artisan" ? blood_type : null,
+    rhesus_factor: role === "artisan" ? rhesus_factor : null,
   };
 
   db.prepare(`
-    INSERT INTO users (id, role, fullname, email, phone, password_hash, status, joined, skill, verified, bio, rate)
-    VALUES (@id, @role, @fullname, @email, @phone, @password_hash, @status, @joined, @skill, @verified, @bio, @rate)
+    INSERT INTO users (id, role, fullname, email, phone, password_hash, status, joined, skill, verified, bio, rate, blood_type, rhesus_factor)
+    VALUES (@id, @role, @fullname, @email, @phone, @password_hash, @status, @joined, @skill, @verified, @bio, @rate, @blood_type, @rhesus_factor)
   `).run(row);
 
   const user = db.prepare("SELECT * FROM users WHERE id = ?").get(id);
