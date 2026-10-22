@@ -17,6 +17,9 @@ function toArtisanPublic(row) {
         verified: !!row.verified,
         bio: row.bio,
         rate: row.rate,
+        blood_type: row.blood_type,
+        rhesus_factor: row.rhesus_factor,
+
     };
 }
 

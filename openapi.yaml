@@ -242,8 +242,8 @@ paths:
     get:
       summary: List artisans who have given a blood group
       description: Implemented in server/routes/donors.js. Admin-only. Excludes suspended artisans and
-        artisans with no blood group on record. Blood group is health information, so it is deliberately
-        not part of the public ArtisanPublic shape returned by /api/artisans.
+        artisans with no blood group on record. Blood group and rhesus factor are also included in the
+        public ArtisanPublic shape returned by /api/artisans.
       parameters:
       - name: blood_type
         in: query
@@ -391,6 +391,22 @@ components:
           type: string
           nullable: true
           example: From KES 500/style
+        blood_type:
+          type: string
+          nullable: true
+          enum:
+          - A
+          - B
+          - AB
+          - O
+          example: O
+        rhesus_factor:
+          type: string
+          nullable: true
+          enum:
+          - positive
+          - negative
+          example: positive
     BloodInfoUpdate:
       type: object
       required:
