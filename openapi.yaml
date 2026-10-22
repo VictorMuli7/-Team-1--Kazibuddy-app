@@ -6,7 +6,7 @@ info:
     \ API_NEEDS.md / ENDPOINT_LIST.md). This is NOT a full document of Jua Kali's entire API surface \u2014\
     \ internal-only endpoints (auth, user management, reviews, the general booking list/create used by\
     \ Jua Kali's own frontend) are intentionally out of scope, since this consumer never calls them. All\
-    \ paths below are implemented in server/routes/artisans.js and server/routes/bookings.js."
+    \ paths below are implemented in server/routes/artisans.js and server/routes/bookings.js, except the blood group endpoints (/api/users/me/blood-info, /api/donors, /api/donors/summary), which were added with the blood type / rhesus factor feature and live in server/routes/users.js and server/routes/donors.js."
 servers:
 - url: http://localhost:3000
 security:
@@ -201,6 +201,147 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/users/me/blood-info:
+    patch:
+      summary: Artisan updates their own blood type and rhesus factor
+      description: Implemented in server/routes/users.js. Artisan-only; the user is taken from the
+        session, never from the request body, so an artisan can only change their own record. Both
+        fields are required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BloodInfoUpdate'
+      responses:
+        '200':
+          description: Blood group updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - user
+                properties:
+                  ok:
+                    type: boolean
+                  user:
+                    type: object
+                    description: The updated user record (password hash excluded), including blood_type
+                      and rhesus_factor.
+        '400':
+          description: Missing or invalid blood_type / rhesus_factor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/donors:
+    get:
+      summary: List artisans who have given a blood group
+      description: Implemented in server/routes/donors.js. Admin-only. Excludes suspended artisans and
+        artisans with no blood group on record. Blood group and rhesus factor are also included in the
+        public ArtisanPublic shape returned by /api/artisans.
+      parameters:
+      - name: blood_type
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - A
+          - B
+          - AB
+          - O
+        example: O
+      - name: rhesus_factor
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - positive
+          - negative
+        example: positive
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - count
+                - donors
+                properties:
+                  ok:
+                    type: boolean
+                  count:
+                    type: integer
+                    example: 1
+                  donors:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Donor'
+        '400':
+          description: Invalid blood_type or rhesus_factor filter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/donors/summary:
+    get:
+      summary: Count of artisans per blood group
+      description: Implemented in server/routes/donors.js. Admin-only. Same population as GET /api/donors
+        (non-suspended artisans with a blood group), grouped and counted.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - total
+                - summary
+                properties:
+                  ok:
+                    type: boolean
+                  total:
+                    type: integer
+                    example: 2
+                  summary:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - blood_type
+                      - rhesus_factor
+                      - count
+                      properties:
+                        blood_type:
+                          type: string
+                          enum:
+                          - A
+                          - B
+                          - AB
+                          - O
+                        rhesus_factor:
+                          type: string
+                          enum:
+                          - positive
+                          - negative
+                        count:
+                          type: integer
+                          example: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 components:
   securitySchemes:
     sessionAuth:
@@ -262,6 +403,68 @@ components:
         rhesus_factor:
           type: string
           nullable: true
+          enum:
+          - positive
+          - negative
+          example: positive
+    BloodInfoUpdate:
+      type: object
+      required:
+      - blood_type
+      - rhesus_factor
+      properties:
+        blood_type:
+          type: string
+          enum:
+          - A
+          - B
+          - AB
+          - O
+          example: O
+        rhesus_factor:
+          type: string
+          enum:
+          - positive
+          - negative
+          example: positive
+    Donor:
+      type: object
+      description: What the admin-only donor endpoints return for one artisan. Deliberately excludes
+        email, password hash and account status.
+      required:
+      - id
+      - fullname
+      - verified
+      - blood_type
+      - rhesus_factor
+      properties:
+        id:
+          type: string
+          example: u-artisan
+        fullname:
+          type: string
+          example: Faith Wanjiru
+        phone:
+          type: string
+          nullable: true
+          example: +254 700 000 003
+        skill:
+          type: string
+          nullable: true
+          example: Hair Styling
+        verified:
+          type: boolean
+          example: true
+        blood_type:
+          type: string
+          enum:
+          - A
+          - B
+          - AB
+          - O
+          example: O
+        rhesus_factor:
+          type: string
           enum:
           - positive
           - negative
