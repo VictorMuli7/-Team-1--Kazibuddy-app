@@ -250,6 +250,22 @@ components:
           type: string
           nullable: true
           example: From KES 500/style
+        blood_type:
+          type: string
+          nullable: true
+          enum:
+          - A
+          - B
+          - AB
+          - O
+          example: O
+        rhesus_factor:
+          type: string
+          nullable: true
+          enum:
+          - positive
+          - negative
+          example: positive
     Booking:
       type: object
       required:
