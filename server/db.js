@@ -26,7 +26,9 @@ db.exec(`
     skill         TEXT,
     verified      INTEGER NOT NULL DEFAULT 0,
     bio           TEXT,
-    rate          TEXT
+    rate          TEXT,
+    blood_type    TEXT CHECK (blood_type IS NULL OR blood_type IN ('A','B','AB','O')),
+    rhesus_factor TEXT CHECK (rhesus_factor IS NULL OR rhesus_factor IN ('positive','negative'))
   );
 
   CREATE TABLE IF NOT EXISTS bookings (
@@ -39,6 +41,15 @@ db.exec(`
     price         TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS appointments (
+    id            TEXT PRIMARY KEY,
+    artisan_id    TEXT NOT NULL REFERENCES users(id),
+    department    TEXT NOT NULL CHECK (department IN ('General OPD','Dental','Pediatrics')),
+    date          TEXT NOT NULL,
+    status        TEXT NOT NULL DEFAULT 'pending',
+    created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS reviews (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     name          TEXT NOT NULL,
@@ -48,6 +59,17 @@ db.exec(`
     text          TEXT NOT NULL
   );
 `);
+
+const userColumns = new Set(
+  db.prepare("PRAGMA table_info(users)").all().map(({ name }) => name)
+);
+
+if (!userColumns.has("blood_type")) {
+  db.exec("ALTER TABLE users ADD COLUMN blood_type TEXT CHECK (blood_type IS NULL OR blood_type IN ('A','B','AB','O'))");
+}
+if (!userColumns.has("rhesus_factor")) {
+  db.exec("ALTER TABLE users ADD COLUMN rhesus_factor TEXT CHECK (rhesus_factor IS NULL OR rhesus_factor IN ('positive','negative'))");
+}
 
 /* ---------- Seed once, only if the users table is empty ---------- */
 function seedIfNeeded() {

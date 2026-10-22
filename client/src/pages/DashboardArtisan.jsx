@@ -12,12 +12,24 @@ const navLinks = [
 
 export default function DashboardArtisan() {
   const { session } = useAuth();
+  const today = new Date();
+  const minAppointmentDate = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0'),
+  ].join('-');
 
   const [jobs, setJobs] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [user, setUser] = useState(null);
 
   const [rate, setRate] = useState('');
   const [bio, setBio] = useState('');
+  const [appointmentDepartment, setAppointmentDepartment] = useState('');
+  const [appointmentDate, setAppointmentDate] = useState('');
+  const [appointmentLoading, setAppointmentLoading] = useState(false);
+  const [appointmentError, setAppointmentError] = useState('');
+  const [appointmentMessage, setAppointmentMessage] = useState('');
 
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -75,6 +87,26 @@ export default function DashboardArtisan() {
     }
   }, [session]);
 
+  const loadAppointments = useCallback(async () => {
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${API_URL}/appointments`, {
+        credentials: 'include',
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || 'Unable to load your clinic appointments.');
+      }
+
+      setAppointments(data.appointments);
+    } catch (err) {
+      console.error('Appointment loading error:', err);
+      setAppointmentError(err.message || 'Unable to load your clinic appointments.');
+    }
+  }, [session]);
+
   // Load everything when the artisan session is available
   useEffect(() => {
     if (!session) {
@@ -89,13 +121,50 @@ export default function DashboardArtisan() {
       await Promise.all([
         loadJobs(),
         loadUser(),
+        loadAppointments(),
       ]);
 
       setLoading(false);
     };
 
     loadDashboard();
-  }, [session, loadJobs, loadUser]);
+  }, [session, loadJobs, loadUser, loadAppointments]);
+
+  const handleAppointmentSubmit = async (e) => {
+    e.preventDefault();
+    setAppointmentError('');
+    setAppointmentMessage('');
+    setAppointmentLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/appointments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          department: appointmentDepartment,
+          date: appointmentDate,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || 'Unable to book your clinic appointment.');
+      }
+
+      setAppointments((current) => [data.appointment, ...current]);
+      setAppointmentDepartment('');
+      setAppointmentDate('');
+      setAppointmentMessage('Your appointment request has been submitted.');
+    } catch (err) {
+      console.error('Appointment booking error:', err);
+      setAppointmentError(err.message || 'Unable to book your clinic appointment.');
+    } finally {
+      setAppointmentLoading(false);
+    }
+  };
 
   // Accept, decline or complete a booking
   const handleJobAction = async (id, action) => {
@@ -470,6 +539,90 @@ export default function DashboardArtisan() {
               </table>
             )}
 
+          </div>
+        </section>
+
+        <section className="dashboard-section">
+          <h3>Book a clinic appointment</h3>
+          <p className="dashboard-section-subtext">
+            Choose a department and date to submit an appointment request.
+          </p>
+
+          <form className="dashboard-form" onSubmit={handleAppointmentSubmit}>
+            <div className="dashboard-form-row">
+              <div className="form-group">
+                <label htmlFor="appointment-department">Department</label>
+                <select
+                  id="appointment-department"
+                  required
+                  value={appointmentDepartment}
+                  onChange={(e) => setAppointmentDepartment(e.target.value)}
+                >
+                  <option value="" disabled>Select a department</option>
+                  <option value="General OPD">General OPD</option>
+                  <option value="Dental">Dental</option>
+                  <option value="Pediatrics">Pediatrics</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="appointment-date">Appointment date</label>
+                <input
+                  id="appointment-date"
+                  type="date"
+                  required
+                  min={minAppointmentDate}
+                  value={appointmentDate}
+                  onChange={(e) => setAppointmentDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {appointmentError && (
+              <p className="form-error" role="alert">{appointmentError}</p>
+            )}
+            {appointmentMessage && (
+              <p className="form-success" role="status">{appointmentMessage}</p>
+            )}
+
+            <button
+              type="submit"
+              className="btn-submit"
+              disabled={appointmentLoading}
+              style={{ width: 'auto', padding: '0.7rem 1.6rem' }}
+            >
+              {appointmentLoading ? 'Submitting...' : 'Request appointment'}
+            </button>
+          </form>
+
+          <h3 style={{ marginTop: '24px' }}>My clinic appointments</h3>
+          <div className="dashboard-table-wrap">
+            {appointments.length === 0 ? (
+              <p className="dashboard-empty">You have no clinic appointments yet.</p>
+            ) : (
+              <table className="dashboard-table">
+                <thead>
+                  <tr>
+                    <th>Department</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {appointments.map((appointment) => (
+                    <tr key={appointment.id}>
+                      <td>{appointment.department}</td>
+                      <td>{appointment.date}</td>
+                      <td>
+                        <span className={`badge badge-${appointment.status}`}>
+                          {appointment.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </section>
 

@@ -8,6 +8,7 @@ const db = require("./db");
 const { router: authRouter } = require("./routes/auth");
 const usersRouter = require("./routes/users");
 const bookingsRouter = require("./routes/bookings");
+const appointmentsRouter = require("./routes/appointments");
 const reviewsRouter = require("./routes/reviews");
 const artisansRouter = require("./routes/artisans");
 
@@ -35,6 +36,7 @@ app.use(
 app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/bookings", bookingsRouter);
+app.use("/api/appointments", appointmentsRouter);
 app.use("/api/reviews", reviewsRouter);
 app.use("/api/artisans", artisansRouter);
 
@@ -45,4 +47,3 @@ app.listen(PORT, () => {
   console.log(`Jua Kali server running at http://localhost:${PORT}`);
   console.log(`Database file: ${path.join(__dirname, "juakali.db")}`);
 });
-
