@@ -5,6 +5,7 @@ const session = require("express-session");
 const SqliteStore = require("better-sqlite3-session-store")(session);
 const cors = require("cors");
 const db = require("./db");
+const hospitalQRoutes = require("./routes/hospitalq");
 
 const { router: authRouter } = require("./routes/auth");
 const usersRouter = require("./routes/users");
@@ -63,6 +64,8 @@ app.use(
     },
   })
 );
+
+app.use("/api/partners/hospitalq", hospitalQRoutes);
 
 app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
