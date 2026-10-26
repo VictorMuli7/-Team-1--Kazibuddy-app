@@ -3,7 +3,7 @@ import Header from '../components/Header.jsx';
 import Footer from '../components/Footer.jsx';
 import { useAuth } from '../lib/AuthContext.jsx';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
 
 const navLinks = [
   { to: '/#services', label: 'Services' },

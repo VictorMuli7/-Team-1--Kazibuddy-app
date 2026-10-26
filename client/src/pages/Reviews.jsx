@@ -3,7 +3,7 @@ import Header from '../components/Header.jsx';
 import Footer from '../components/Footer.jsx';
 import { seedReviews, categoryData } from '../data/reviews.js';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
 
 const navLinks = [
   { to: '/#about', label: 'About' },
