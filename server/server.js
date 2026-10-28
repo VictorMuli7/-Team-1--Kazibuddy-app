@@ -7,6 +7,12 @@ const PgStore = require("connect-pg-simple")(session);
 const cors = require("cors");
 const { pool, initDb } = require("./db");
 
+const hospitalQRoutes = require("./routes/hospitalQ");
+
+app.use(express.json());
+
+app.use("/api/partners/hospitalq", hospitalQRoutes);
+
 const { router: authRouter } = require("./routes/auth");
 const usersRouter = require("./routes/users");
 const bookingsRouter = require("./routes/bookings");
