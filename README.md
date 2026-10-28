@@ -320,7 +320,7 @@ The migration reads `server/juakali.db` by default. To use a different SQLite fi
 npm run migrate:sqlite -- "C:\path\to\juakali.db"
 ```
 
-The migration refuses to import into tables that already contain records. Back up the SQLite file and confirm `DATABASE_URL` points to the intended PostgreSQL database before running it. On Render, run this migration once with the service's internal database URL before starting the application.
+By default, the migration refuses to import into tables that already contain records. If you want to preserve existing PostgreSQL rows and add only non-conflicting SQLite records, run `npm run migrate:sqlite -- --merge`; conflicting IDs or unique values are skipped, not overwritten. The import runs in a transaction. Back up the SQLite file and confirm `DATABASE_URL` points to the intended PostgreSQL database before running it. On Render, run this migration once from the service shell.
 
 Start the server:
 

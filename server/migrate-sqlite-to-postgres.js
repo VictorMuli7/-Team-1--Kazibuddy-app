@@ -2,7 +2,9 @@ const path = require("path");
 const Database = require("better-sqlite3");
 const { pool, initializeDatabase } = require("./db");
 
-const sourcePath = process.argv[2] || path.join(__dirname, "juakali.db");
+const args = process.argv.slice(2);
+const merge = args.includes("--merge");
+const sourcePath = args.find((arg) => arg !== "--merge") || path.join(__dirname, "juakali.db");
 const tables = {
   users: [
     "id", "role", "fullname", "email", "phone", "password_hash", "status",
@@ -24,7 +26,7 @@ async function migrate() {
       await client.query("BEGIN");
       for (const table of Object.keys(tables)) {
         const { rows } = await client.query(`SELECT COUNT(*)::int AS count FROM ${table}`);
-        if (rows[0].count > 0) {
+        if (rows[0].count > 0 && !merge) {
           throw new Error(`PostgreSQL table "${table}" is not empty; refusing to import to avoid conflicts.`);
         }
       }
@@ -34,16 +36,19 @@ async function migrate() {
         const sourceColumns = new Set(sqlite.prepare(`PRAGMA table_info(${table})`).all().map(({ name }) => name));
         const availableColumns = columns.filter((column) => sourceColumns.has(column));
         const placeholders = availableColumns.map((_, index) => `$${index + 1}`).join(", ");
-        const statement = `INSERT INTO ${table} (${availableColumns.join(", ")}) VALUES (${placeholders})`;
+        const conflictClause = merge ? " ON CONFLICT DO NOTHING" : "";
+        const statement = `INSERT INTO ${table} (${availableColumns.join(", ")}) VALUES (${placeholders})${conflictClause}`;
+        let imported = 0;
 
         for (const sourceRow of sourceRows) {
           const values = availableColumns.map((column) => {
             const value = sourceRow[column];
             return table === "users" && column === "verified" ? Boolean(value) : value;
           });
-          await client.query(statement, values);
+          const result = await client.query(statement, values);
+          imported += result.rowCount;
         }
-        console.log(`Imported ${sourceRows.length} ${table} row(s).`);
+        console.log(`Imported ${imported} of ${sourceRows.length} ${table} row(s); skipped ${sourceRows.length - imported}.`);
       }
 
       await client.query(`
@@ -54,7 +59,7 @@ async function migrate() {
         )
       `);
       await client.query("COMMIT");
-      console.log(`SQLite data from "${sourcePath}" was migrated successfully.`);
+      console.log(`SQLite data from "${sourcePath}" was migrated successfully${merge ? " (conflicts skipped)" : ""}.`);
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
