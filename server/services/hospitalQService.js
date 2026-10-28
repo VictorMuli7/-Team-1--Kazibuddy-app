@@ -1,12 +1,20 @@
-
 const BASE_URL = "https://hospitalq-webapp.vercel.app";
+
+// HospitalQ now requires an API key on its requests.
+// Get the key (and the header name it expects) from your producer.
+const API_KEY = process.env.HOSPITALQ_API_KEY;
+const API_KEY_HEADER = process.env.HOSPITALQ_API_KEY_HEADER || "x-api-key";
+
+function keyHeaders() {
+  return API_KEY ? { [API_KEY_HEADER]: API_KEY } : {};
+}
 
 let cachedToken = null;
 
 async function login() {
   const response = await fetch(`${BASE_URL}/api/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...keyHeaders() },
     body: JSON.stringify({
       email: process.env.HOSPITALQ_EMAIL,
       password: process.env.HOSPITALQ_PASSWORD
@@ -26,6 +34,7 @@ async function login() {
 async function request(path, options = {}, protectedRoute = false) {
   const headers = {
     ...(options.body ? { "Content-Type": "application/json" } : {}),
+    ...keyHeaders(),
     ...options.headers
   };
 
@@ -76,3 +85,5 @@ module.exports = {
   overview: () =>
     request("/api/analytics/overview", {}, true)
 };
+
+
