@@ -23,20 +23,32 @@ const PUBLIC_DIR = [
 ].find((dir) => fs.existsSync(dir)) || path.join(__dirname, "..");
 const SESSION_SECRET = process.env.SESSION_SECRET || "juakali-dev-secret-change-me";
 
+function normalizeOrigin(origin) {
+  try {
+    return new URL(origin).origin;
+  } catch {
+    return null;
+  }
+}
+
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+  "http://localhost:3001",
+]
+  .filter(Boolean)
+  .flatMap((value) => value.split(","))
+  .map((origin) => normalizeOrigin(origin.trim()))
+  .filter(Boolean);
+
 app.use(cors({
   origin: (origin, callback) => {
-    const allowedOrigins = [
-      process.env.CLIENT_URL,
-      "http://localhost:5173",
-      "http://localhost:3001",
-    ].filter(Boolean);
-
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(normalizeOrigin(origin))) {
       callback(null, true);
       return;
     }
 
-    callback(new Error("Not allowed by CORS"));
+    callback(null, false);
   },
   credentials: true,
 }));

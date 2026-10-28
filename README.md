@@ -349,3 +349,12 @@ You should see JSON starting with `{"ok":true,"artisans":[`.
 Changes are stored in PostgreSQL. To reset local test data, clear the PostgreSQL tables or use a separate development database; deleting the SQLite file does not reset PostgreSQL.
 
 **Port already in use?** Start on another port: `PORT=3001 npm start` (macOS/Linux) or `$env:PORT=3001; npm start` (PowerShell), and use that port in the URLs.
+
+## Vercel and Render environment variables
+
+For a Vercel frontend talking to this Render API, configure:
+
+- **Vercel:** `VITE_API_URL=https://your-render-service.onrender.com` (the service base URL only; the client adds `/api`).
+- **Render:** `CLIENT_URL=https://your-project.vercel.app` (the frontend origin; a trailing slash is also accepted).
+
+Add any other frontend origins you use, such as a Vercel preview domain, as a comma-separated list in Render's `CLIENT_URL`. Redeploy both services after changing environment variables. The API can be checked directly at `https://your-render-service.onrender.com/api/artisans`; a `404` at the service root `/` is not an API health check.
