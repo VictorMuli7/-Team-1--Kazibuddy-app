@@ -294,35 +294,28 @@ Every failed response has the same shape. The field is called `error` (not `mess
 
 ## Run the API locally
 
-**You need:** [Node.js](https://nodejs.org) (current LTS recommended) with npm, [git](https://git-scm.com), and a PostgreSQL database.
+**You need:** [Node.js](https://nodejs.org) (current LTS recommended) with npm, [git](https://git-scm.com), and a [PostgreSQL](https://www.postgresql.org/download/) server (v13 or newer) running locally or hosted.
+
+**1. Create the database** (once):
+
+```bash
+createdb juakali
+```
+
+(or, from `psql`: `CREATE DATABASE juakali;`)
+
+**2. Install and configure:**
 
 ```bash
 git clone https://github.com/VictorMuli7/-Team-1--Kazibuddy-app.git
 cd ./-Team-1--Kazibuddy-app/server
 npm install
+cp .env.example .env      # Windows PowerShell: Copy-Item .env.example .env
 ```
 
-Set `DATABASE_URL` to your PostgreSQL connection string before running the server. In PowerShell:
+Open `server/.env` and set `DATABASE_URL` to your PostgreSQL connection string (format `postgres://USER:PASSWORD@HOST:PORT/DATABASE`). For a hosted database that requires SSL, also set `DATABASE_SSL=true`.
 
-```powershell
-$env:DATABASE_URL="postgresql://postgres:password@localhost:5432/juakali"
-```
-
-To preserve the existing SQLite records, migrate them once into an empty PostgreSQL database:
-
-```bash
-npm run migrate:sqlite
-```
-
-The migration reads `server/juakali.db` by default. To use a different SQLite file, pass its path:
-
-```bash
-npm run migrate:sqlite -- "C:\path\to\juakali.db"
-```
-
-By default, the migration refuses to import into tables that already contain records. If you want to preserve existing PostgreSQL rows and add only non-conflicting SQLite records, run `npm run migrate:sqlite -- --merge`; conflicting IDs or unique values are skipped, not overwritten. The import runs in a transaction. Back up the SQLite file and confirm `DATABASE_URL` points to the intended PostgreSQL database before running it. On Render, run this migration once from the service shell.
-
-Start the server:
+**3. Start the server:**
 
 ```bash
 npm start
@@ -330,13 +323,15 @@ npm start
 
 > The folder name starts with a dash, so type `cd ./-Team-1--Kazibuddy-app/server` exactly as written (with the `./`). Without it, the terminal reads the name as an option and `cd` fails.
 
-The server creates the PostgreSQL tables automatically and then prints:
+You should see:
 
 ```
+Database seeded with initial demo data.
 Jua Kali server running at http://localhost:3000
+Database: PostgreSQL
 ```
 
-Leave this terminal running and use a second terminal for the `curl` commands above. Existing demo users and records are available after migrating the existing SQLite database. A fresh PostgreSQL database starts without sample accounts; users can register through the app.
+Leave this terminal running and use a second terminal for the `curl` commands above. The tables and the demo data are created automatically on the first start (the database itself must already exist), so no seeding step is needed. If the server exits with "Could not connect to / set up PostgreSQL", check `DATABASE_URL` in `server/.env`.
 
 **Check that it works:**
 
@@ -346,15 +341,60 @@ curl http://localhost:3000/api/artisans
 
 You should see JSON starting with `{"ok":true,"artisans":[`.
 
-Changes are stored in PostgreSQL. To reset local test data, clear the PostgreSQL tables or use a separate development database; deleting the SQLite file does not reset PostgreSQL.
+**Reset the demo data** (for example after trying the PATCH): stop the server with `Ctrl+C`, then recreate the database and start again:
+
+```bash
+dropdb juakali && createdb juakali
+npm start
+```
+
+**Moving data over from the old SQLite version:** if you have an existing `server/juakali.db` you want to keep, run this once against the fresh, empty PostgreSQL database *before* the first `npm start` (needs Node 22.13+):
+
+```bash
+npm run migrate:sqlite                    # reads server/juakali.db
+npm run migrate:sqlite -- path/to/old.db  # or point at another file
+```
+
+Passwords, bookings, reviews and artisan blood-type data are copied as they are; login sessions are not, so everyone signs in again.
 
 **Port already in use?** Start on another port: `PORT=3001 npm start` (macOS/Linux) or `$env:PORT=3001; npm start` (PowerShell), and use that port in the URLs.
 
-## Vercel and Render environment variables
+---
 
-For a Vercel frontend talking to this Render API, configure:
+## Deploy: Render (API + PostgreSQL) and Vercel (client)
 
-- **Vercel:** `VITE_API_URL=https://your-render-service.onrender.com` (the service base URL only; the client adds `/api`).
-- **Render:** `CLIENT_URL=https://your-project.vercel.app` (the frontend origin; a trailing slash is also accepted).
+**Render: database.** Create a *PostgreSQL* instance. Copy its **Internal Database URL** (use the External one only when connecting from your own computer).
 
-Add any other frontend origins you use, such as a Vercel preview domain, as a comma-separated list in Render's `CLIENT_URL`. Redeploy both services after changing environment variables. The API can be checked directly at `https://your-render-service.onrender.com/api/artisans`; a `404` at the service root `/` is not an API health check.
+**Render: web service.** Root Directory `server`, Build Command `npm install`, Start Command `npm start`. Environment variables:
+
+| Variable | Value |
+|----------|-------|
+| `DATABASE_URL` | the Internal Database URL from the step above |
+| `SESSION_SECRET` | a long random string |
+| `CORS_ORIGIN` | your Vercel URL, e.g. `https://your-app.vercel.app` (no trailing slash; comma-separate several) |
+
+On the first successful start the log shows `Database seeded with initial demo data.` If the service exits with `Could not connect to / set up PostgreSQL`, `DATABASE_URL` is missing or wrong.
+
+**Vercel: client.** Root Directory `client`. Add the environment variable `VITE_API_URL` = `https://your-service.onrender.com/api` (note the `/api`), then **redeploy**. Vite bakes it in at build time, so changing it without redeploying does nothing.
+
+**Getting your old data into the Render database.** The seed only creates the demo accounts. To load your old `juakali.db` instead, run this from your computer against an *empty* database, using the External Database URL:
+
+```bash
+cd server
+DATABASE_URL="<External Database URL>" DATABASE_SSL=true npm run migrate:sqlite -- path/to/juakali.db
+```
+
+(PowerShell: `$env:DATABASE_URL="..."; $env:DATABASE_SSL="true"; npm run migrate:sqlite -- path/to/juakali.db`.) It refuses to run if users already exist. If the server already seeded the demo data, empty the database first, which **deletes everything in it**: `psql "<External Database URL>" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"`.
+
+**Safari / "I log in but get logged out straight away".** Some browsers block cookies set by a different domain. The fix is to make the API look like it is on the same domain: leave `VITE_API_URL` unset and put this in `client/vercel.json` (replacing the URL), then redeploy:
+
+```json
+{
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://your-service.onrender.com/api/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
+```
+
+Render's free tier sleeps when idle, so the first request after a quiet period can take about a minute.

@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import Header from '../components/Header.jsx';
 import Footer from '../components/Footer.jsx';
 import { seedReviews, categoryData } from '../data/reviews.js';
+import { API_URL } from '../lib/api';
 
-const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
 
 const navLinks = [
   { to: '/#about', label: 'About' },

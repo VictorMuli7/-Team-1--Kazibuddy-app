@@ -1,60 +1,67 @@
 const express = require("express");
-const { pool } = require("../db");
+const db = require("../db");
 const { requireRole, asyncHandler } = require("../middleware");
 
 const router = express.Router();
 
-function enrich(booking) {
+/* One query returns each booking together with the customer's and artisan's
+   names, instead of two extra lookups per booking. */
+const BOOKING_SELECT = `
+    SELECT b.*, c.fullname AS customer_name, a.fullname AS artisan_name
+    FROM bookings b
+    LEFT JOIN users c ON c.id = b.customer_id
+    LEFT JOIN users a ON a.id = b.artisan_id`;
+
+function toBooking(row) {
     return {
-        id: booking.id,
-        customerId: booking.customer_id,
-        customerName: booking.customer_name || "Unknown",
-        service: booking.service,
-        artisanId: booking.artisan_id,
-        artisanName: booking.artisan_name || "Unknown",
-        date: booking.date,
-        status: booking.status,
-        price: booking.price,
+        id: row.id,
+        customerId: row.customer_id,
+        customerName: row.customer_name || "Unknown",
+        service: row.service,
+        artisanId: row.artisan_id,
+        artisanName: row.artisan_name || "Unknown",
+        date: row.date,
+        status: row.status,
+        price: row.price,
     };
 }
 
-const BOOKING_SELECT = `
-    SELECT b.*, customer.fullname AS customer_name, artisan.fullname AS artisan_name
-    FROM bookings b
-    LEFT JOIN users customer ON customer.id = b.customer_id
-    LEFT JOIN users artisan ON artisan.id = b.artisan_id
-`;
-
-async function findArtisanForService(serviceTitle) {
-    const result = await pool.query(
-        "SELECT * FROM users WHERE role = 'artisan' AND status = 'active' AND verified = TRUE"
-    );
-    const artisans = result.rows;
-    const norm = (value) => (value || "").toLowerCase();
-    const direct = artisans.find((artisan) => norm(artisan.skill) === norm(serviceTitle));
-    if (direct) return direct;
-    const partial = artisans.find(
-        (artisan) => norm(artisan.skill).includes(norm(serviceTitle)) || norm(serviceTitle).includes(norm(artisan.skill))
-    );
-    return partial || artisans[0] || null;
+async function getBooking(id) {
+    const { rows } = await db.query(`${BOOKING_SELECT} WHERE b.id = $1`, [id]);
+    return rows[0] || null;
 }
 
-router.get("/", requireRole(), asyncHandler(async (req, res) => {
-    const { role, id } = req.session.user;
-    let query = BOOKING_SELECT;
-    let params = [];
-    if (role === "artisan") {
-        query += " WHERE b.artisan_id = $1";
-        params = [id];
-    } else if (role !== "admin") {
-        query += " WHERE b.customer_id = $1";
-        params = [id];
-    }
+/* Finds an artisan for a service: prefers a verified, active artisan whose
+   skill matches; falls back to any verified/active artisan. */
+async function findArtisanForService(serviceTitle) {
+    const { rows: artisans } = await db.query(
+        "SELECT * FROM users WHERE role = 'artisan' AND status = 'active' AND verified = TRUE ORDER BY joined, id"
+    );
+    const norm = (s) => (s || "").toLowerCase();
+    const direct = artisans.find((a) => norm(a.skill) === norm(serviceTitle));
+    if (direct) return direct;
+    const partial = artisans.find(
+        (a) => norm(a.skill).includes(norm(serviceTitle)) || norm(serviceTitle).includes(norm(a.skill))
+    );
+    if (partial) return partial;
+    return artisans[0] || null;
+}
 
-    const result = await pool.query(query, params);
-    res.json({ ok: true, bookings: result.rows.map(enrich) });
+/* ---------- GET /api/bookings  (scoped to the signed-in user's role) ---------- */
+router.get("/", requireRole(), asyncHandler(async (req, res) => {
+    const session = req.session.user;
+    let result;
+    if (session.role === "admin") {
+        result = await db.query(`${BOOKING_SELECT} ORDER BY b.date DESC, b.id`);
+    } else if (session.role === "artisan") {
+        result = await db.query(`${BOOKING_SELECT} WHERE b.artisan_id = $1 ORDER BY b.date DESC, b.id`, [session.id]);
+    } else {
+        result = await db.query(`${BOOKING_SELECT} WHERE b.customer_id = $1 ORDER BY b.date DESC, b.id`, [session.id]);
+    }
+    res.json({ ok: true, bookings: result.rows.map(toBooking) });
 }));
 
+/* ---------- POST /api/bookings  (customer creates a booking) ---------- */
 router.post("/", requireRole("customer"), asyncHandler(async (req, res) => {
     const { serviceTitle, price, date } = req.body || {};
     if (!serviceTitle || !date) {
@@ -67,51 +74,55 @@ router.post("/", requireRole("customer"), asyncHandler(async (req, res) => {
     }
 
     const id = "b-" + Date.now();
-    await pool.query(`
-        INSERT INTO bookings (id, customer_id, service, artisan_id, date, status, price)
-        VALUES ($1, $2, $3, $4, $5, 'pending', $6)
-    `, [id, req.session.user.id, serviceTitle, artisan.id, date, price || null]);
+    await db.query(
+        `INSERT INTO bookings (id, customer_id, service, artisan_id, date, status, price)
+         VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
+        [id, req.session.user.id, serviceTitle, artisan.id, date, price || null]
+    );
 
-    const result = await pool.query(`${BOOKING_SELECT} WHERE b.id = $1`, [id]);
-    res.json({ ok: true, booking: enrich(result.rows[0]) });
+    res.json({ ok: true, booking: toBooking(await getBooking(id)) });
 }));
 
+/* ---------- GET /api/bookings/:id  (full record — public, for the organ donation app) ---------- */
+/* NOTE: publicly readable by design (matches openapi.yaml's security: []).
+   This does expose customerName to an external consumer — worth a privacy
+   gut-check with your team before this ships, since it wasn't demanded by
+   a specific need statement, just added for symmetry with /artisans. */
 router.get("/:id", asyncHandler(async (req, res) => {
-    const result = await pool.query(`${BOOKING_SELECT} WHERE b.id = $1`, [req.params.id]);
-    const booking = result.rows[0];
+    const booking = await getBooking(req.params.id);
     if (!booking) {
         return res.status(404).json({ ok: false, error: "Booking not found." });
     }
-    res.json({ ok: true, booking: enrich(booking) });
+    res.json({ ok: true, booking: toBooking(booking) });
 }));
 
+/* ---------- GET /api/bookings/:id/status  (public — the organ donation app's actual need) ---------- */
 router.get("/:id/status", asyncHandler(async (req, res) => {
-    const result = await pool.query("SELECT status FROM bookings WHERE id = $1", [req.params.id]);
-    const booking = result.rows[0];
-    if (!booking) {
+    const { rows } = await db.query("SELECT status FROM bookings WHERE id = $1", [req.params.id]);
+    if (!rows[0]) {
         return res.status(404).json({ ok: false, error: "Booking not found." });
     }
-    res.json({ ok: true, status: booking.status });
+    res.json({ ok: true, status: rows[0].status });
 }));
 
+/* ---------- PATCH /api/bookings/:id/status  (artisan accepts/declines/completes their own job) ---------- */
+/* This replaces the old PATCH /api/bookings/:id — same logic, moved to the
+   dedicated /status path per the design decision in ENDPOINT_LIST.md /
+   openapi.yaml, to avoid two routes doing the same job. */
 router.patch("/:id/status", requireRole("artisan"), asyncHandler(async (req, res) => {
     const { status } = req.body || {};
     if (!["upcoming", "declined", "completed"].includes(status)) {
         return res.status(400).json({ ok: false, error: "Invalid status." });
     }
 
-    const result = await pool.query(
-        "SELECT * FROM bookings WHERE id = $1 AND artisan_id = $2",
-        [req.params.id, req.session.user.id]
-    );
-    const booking = result.rows[0];
-    if (!booking) {
+    const current = await db.query("SELECT * FROM bookings WHERE id = $1", [req.params.id]);
+    const booking = current.rows[0];
+    if (!booking || booking.artisan_id !== req.session.user.id) {
         return res.status(404).json({ ok: false, error: "Booking not found." });
     }
 
-    await pool.query("UPDATE bookings SET status = $1 WHERE id = $2", [status, booking.id]);
-    const updated = await pool.query(`${BOOKING_SELECT} WHERE b.id = $1`, [booking.id]);
-    res.json({ ok: true, booking: enrich(updated.rows[0]) });
+    await db.query("UPDATE bookings SET status = $1 WHERE id = $2", [status, booking.id]);
+    res.json({ ok: true, booking: toBooking(await getBooking(booking.id)) });
 }));
 
 module.exports = router;

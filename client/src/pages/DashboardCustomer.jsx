@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import Header from '../components/Header.jsx';
 import Footer from '../components/Footer.jsx';
 import { useAuth } from '../lib/AuthContext.jsx';
+import { API_URL } from '../lib/api';
 
-const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
 
 const navLinks = [
   { to: '/#services', label: 'Browse Services' },

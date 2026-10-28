@@ -1,11 +1,11 @@
-const fs = require("fs");
+require("dotenv").config({ quiet: true });
+
 const path = require("path");
 const express = require("express");
 const session = require("express-session");
-const PgSession = require("connect-pg-simple")(session);
+const PgStore = require("connect-pg-simple")(session);
 const cors = require("cors");
-const { pool, initializeDatabase } = require("./db");
-const hospitalQRoutes = require("./routes/hospitalq");
+const { pool, initDb } = require("./db");
 
 const { router: authRouter } = require("./routes/auth");
 const usersRouter = require("./routes/users");
@@ -16,68 +16,42 @@ const artisansRouter = require("./routes/artisans");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const PUBLIC_DIR = [
-  path.join(__dirname, "..", "client", "dist"),
-  path.join(__dirname, "..", "client", "public"),
-  path.join(__dirname, ".."),
-].find((dir) => fs.existsSync(dir)) || path.join(__dirname, "..");
-const SESSION_SECRET = process.env.SESSION_SECRET || "juakali-dev-secret-change-me";
+const PUBLIC_DIR = path.join(__dirname, "..", "web_dev-main");
 
-function normalizeOrigin(origin) {
-  try {
-    return new URL(origin).origin;
-  } catch {
-    return null;
-  }
-}
+// Render sets RENDER=true on its services; NODE_ENV=production covers other hosts.
+const isProd = process.env.NODE_ENV === "production" || !!process.env.RENDER;
 
-const allowedOrigins = [
-  process.env.CLIENT_URL,
-  "http://localhost:5173",
-  "http://localhost:3001",
-]
-  .filter(Boolean)
-  .flatMap((value) => value.split(","))
-  .map((origin) => normalizeOrigin(origin.trim()))
+// On Render the app sits behind a proxy that terminates HTTPS. Without this,
+// Express thinks the request is plain HTTP and refuses to set a "secure" cookie.
+if (isProd) app.set("trust proxy", 1);
+
+// CORS_ORIGIN = comma-separated list of frontend URLs allowed to call the API,
+// e.g. https://your-app.vercel.app  (leave unset to allow any origin).
+const allowedOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((o) => o.trim().replace(/\/$/, ""))
   .filter(Boolean);
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(normalizeOrigin(origin))) {
-      callback(null, true);
-      return;
-    }
-
-    callback(null, false);
-  },
-  credentials: true,
-}));
-
+app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : true, credentials: true }));
 app.use(express.json());
-
-if (process.env.NODE_ENV === "production") {
-  app.set("trust proxy", 1);
-}
 
 app.use(
   session({
-    store: new PgSession({
-      pool,
-      createTableIfMissing: true,
-    }),
-    secret: SESSION_SECRET,
+    // Sessions live in a "session" table in the same PostgreSQL database.
+    store: new PgStore({ pool, createTableIfMissing: true }),
+    secret: process.env.SESSION_SECRET || "juakali-dev-secret-change-in-production",
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      secure: process.env.NODE_ENV === "production",
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      // Vercel (frontend) and Render (backend) are different sites, so the
+      // browser only sends the login cookie if it is SameSite=None + Secure.
+      sameSite: isProd ? "none" : "lax",
+      secure: isProd,
     },
   })
 );
-
-app.use("/api/partners/hospitalq", hospitalQRoutes);
 
 app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
@@ -86,31 +60,26 @@ app.use("/api/appointments", appointmentsRouter);
 app.use("/api/reviews", reviewsRouter);
 app.use("/api/artisans", artisansRouter);
 
-app.use((error, req, res, next) => {
-  console.error("Request failed:", error);
-  if (res.headersSent) return next(error);
-  res.status(500).json({ ok: false, error: "An unexpected server error occurred." });
-});
-
+// Serve the frontend (index.html, css/, js/, assets/) as static files
 app.use(express.static(PUBLIC_DIR));
 
-app.get(/^(?!\/api).*/, (req, res, next) => {
-  const indexFile = path.join(PUBLIC_DIR, "index.html");
-  if (fs.existsSync(indexFile)) {
-    return res.sendFile(indexFile);
-  }
-
-  next();
+// Last-resort error handler: database/driver errors from async routes land here.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error(err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ ok: false, error: "Something went wrong on the server. Please try again." });
 });
 
-initializeDatabase()
+initDb()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Jua Kali server running at http://localhost:${PORT}`);
-      console.log("Connected to PostgreSQL.");
+      console.log("Database: PostgreSQL");
     });
   })
-  .catch((error) => {
-    console.error("Failed to initialize PostgreSQL:", error);
-    process.exitCode = 1;
+  .catch((err) => {
+    console.error("Could not connect to / set up PostgreSQL:", err.message);
+    console.error("Check DATABASE_URL in server/.env (see .env.example).");
+    process.exit(1);
   });

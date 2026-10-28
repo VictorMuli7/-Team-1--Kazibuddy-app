@@ -1,6 +1,6 @@
 const express = require("express");
 const { randomUUID } = require("crypto");
-const { pool } = require("../db");
+const db = require("../db");
 const { requireRole, asyncHandler } = require("../middleware");
 
 const router = express.Router();
@@ -17,12 +17,12 @@ function toAppointment(row) {
 }
 
 router.get("/", requireRole("artisan"), asyncHandler(async (req, res) => {
-  const result = await pool.query(
+  const { rows } = await db.query(
     "SELECT * FROM appointments WHERE artisan_id = $1 ORDER BY date DESC, created_at DESC",
     [req.session.user.id]
   );
 
-  res.json({ ok: true, appointments: result.rows.map(toAppointment) });
+  res.json({ ok: true, appointments: rows.map(toAppointment) });
 }));
 
 router.post("/", requireRole("artisan"), asyncHandler(async (req, res) => {
@@ -43,13 +43,12 @@ router.post("/", requireRole("artisan"), asyncHandler(async (req, res) => {
   }
 
   const id = `a-${randomUUID()}`;
-  const result = await pool.query(
+  const { rows } = await db.query(
     "INSERT INTO appointments (id, artisan_id, department, date) VALUES ($1, $2, $3, $4) RETURNING *",
     [id, req.session.user.id, department, date]
   );
 
-  const appointment = result.rows[0];
-  res.status(201).json({ ok: true, appointment: toAppointment(appointment) });
+  res.status(201).json({ ok: true, appointment: toAppointment(rows[0]) });
 }));
 
 module.exports = router;

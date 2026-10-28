@@ -1,5 +1,5 @@
 const express = require("express");
-const { pool } = require("../db");
+const db = require("../db");
 const { asyncHandler } = require("../middleware");
 
 const router = express.Router();
@@ -32,37 +32,33 @@ function toArtisanPublic(row) {
 router.get("/", asyncHandler(async (req, res) => {
     const { skill, verified } = req.query;
 
-    let sql = "SELECT * FROM users WHERE role = 'artisan'";
-    const params = [];
-
     const verifiedFilter = verified === undefined ? true : verified === "true";
-    sql += " AND verified = $1";
-    params.push(verifiedFilter);
+    const params = [verifiedFilter];
+    let sql = "SELECT * FROM users WHERE role = 'artisan' AND verified = $1";
 
     if (skill) {
-        sql += " AND lower(skill) = lower($2)";
         params.push(skill);
+        sql += ` AND lower(skill) = lower($${params.length})`;
     }
 
     sql += " ORDER BY fullname ASC";
 
-    const result = await pool.query(sql, params);
-    res.json({ ok: true, artisans: result.rows.map(toArtisanPublic) });
+    const { rows } = await db.query(sql, params);
+    res.json({ ok: true, artisans: rows.map(toArtisanPublic) });
 }));
 
 /* ---------- GET /api/artisans/:id ---------- */
 router.get("/:id", asyncHandler(async (req, res) => {
-    const result = await pool.query(
+    const { rows } = await db.query(
         "SELECT * FROM users WHERE id = $1 AND role = 'artisan'",
         [req.params.id]
     );
-    const row = result.rows[0];
 
-    if (!row) {
+    if (!rows[0]) {
         return res.status(404).json({ ok: false, error: "Artisan not found." });
     }
 
-    res.json({ ok: true, artisan: toArtisanPublic(row) });
+    res.json({ ok: true, artisan: toArtisanPublic(rows[0]) });
 }));
 
 module.exports = router;

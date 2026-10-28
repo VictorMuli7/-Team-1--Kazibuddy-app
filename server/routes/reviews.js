@@ -1,13 +1,13 @@
 const express = require("express");
-const { pool } = require("../db");
+const db = require("../db");
 const { asyncHandler } = require("../middleware");
 
 const router = express.Router();
 
 /* ---------- GET /api/reviews ---------- */
 router.get("/", asyncHandler(async (req, res) => {
-  const result = await pool.query("SELECT * FROM reviews ORDER BY id DESC");
-  res.json({ ok: true, reviews: result.rows });
+  const { rows } = await db.query("SELECT * FROM reviews ORDER BY id DESC");
+  res.json({ ok: true, reviews: rows });
 }));
 
 /* ---------- POST /api/reviews ---------- */
@@ -21,13 +21,12 @@ router.post("/", asyncHandler(async (req, res) => {
   if (!text || text.trim().length < 10) return res.status(400).json({ ok: false, error: "Please write at least 10 characters in your review." });
 
   const date = new Date().toISOString().slice(0, 10);
-  const result = await pool.query(
+  const { rows } = await db.query(
     "INSERT INTO reviews (name, category, stars, date, text) VALUES ($1, $2, $3, $4, $5) RETURNING *",
     [String(name).trim(), category, ratingNum, date, text.trim()]
   );
 
-  const review = result.rows[0];
-  res.json({ ok: true, review });
+  res.json({ ok: true, review: rows[0] });
 }));
 
 module.exports = router;

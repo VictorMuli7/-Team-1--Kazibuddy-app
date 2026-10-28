@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext.jsx';
+import { API_URL } from '../lib/api';
 
-const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
 
 export default function ServiceModal({ service, onClose }) {
   const { session } = useAuth();

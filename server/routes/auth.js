@@ -1,6 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const { pool } = require("../db");
+const db = require("../db");
 const { asyncHandler } = require("../middleware");
 
 const router = express.Router();
@@ -38,37 +38,42 @@ router.post("/register", asyncHandler(async (req, res) => {
     return res.status(400).json({ ok: false, error: "Please select your rhesus factor." });
   }
 
+  const existing = await db.query("SELECT id FROM users WHERE lower(email) = lower($1)", [email]);
+  if (existing.rows.length) {
+    return res.status(409).json({ ok: false, error: "An account with that email already exists." });
+  }
+
   const id = "u-" + Date.now();
   const password_hash = bcrypt.hashSync(password, 10);
   const joined = new Date().toISOString().slice(0, 10);
 
-  const row = {
-    id, role, fullname, email, phone: phone || null, password_hash,
-    status: role === "artisan" ? "pending" : "active",
-    joined,
-    skill: role === "artisan" ? skill : null,
-    verified: false,
-    bio: role === "artisan" ? "" : null,
-    rate: role === "artisan" ? "Not set yet" : null,
-    blood_type: role === "artisan" ? blood_type : null,
-    rhesus_factor: role === "artisan" ? rhesus_factor : null,
-  };
-
-  const result = await pool.query(`
-    INSERT INTO users (id, role, fullname, email, phone, password_hash, status, joined, skill, verified, bio, rate, blood_type, rhesus_factor)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-    ON CONFLICT DO NOTHING
-    RETURNING *
-  `, [
-    row.id, row.role, row.fullname, row.email, row.phone, row.password_hash,
-    row.status, row.joined, row.skill, row.verified, row.bio, row.rate,
-    row.blood_type, row.rhesus_factor,
-  ]);
-  if (!result.rows[0]) {
-    return res.status(409).json({ ok: false, error: "An account with that email already exists." });
+  let user;
+  try {
+    const result = await db.query(
+      `INSERT INTO users (id, role, fullname, email, phone, password_hash, status, joined, skill, verified, bio, rate, blood_type, rhesus_factor)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       RETURNING *`,
+      [
+        id, role, fullname, email, phone || null, password_hash,
+        role === "artisan" ? "pending" : "active",
+        joined,
+        role === "artisan" ? skill : null,
+        false,
+        role === "artisan" ? "" : null,
+        role === "artisan" ? "Not set yet" : null,
+        role === "artisan" ? blood_type : null,
+        role === "artisan" ? rhesus_factor : null,
+      ]
+    );
+    user = result.rows[0];
+  } catch (err) {
+    // Two sign-ups with the same email racing past the check above.
+    if (err.code === "23505" && /email/.test(err.constraint || "")) {
+      return res.status(409).json({ ok: false, error: "An account with that email already exists." });
+    }
+    throw err;
   }
 
-  const user = result.rows[0];
   req.session.user = toSessionUser(user);
   res.json({ ok: true, user: toPublicUser(user) });
 }));
@@ -80,8 +85,8 @@ router.post("/login", asyncHandler(async (req, res) => {
     return res.status(400).json({ ok: false, error: "Please enter your email and password." });
   }
 
-  const result = await pool.query("SELECT * FROM users WHERE lower(email) = lower($1)", [email]);
-  const user = result.rows[0];
+  const { rows } = await db.query("SELECT * FROM users WHERE lower(email) = lower($1)", [email]);
+  const user = rows[0];
   if (!user) return res.status(401).json({ ok: false, error: "No account found with that email." });
   if (!bcrypt.compareSync(password, user.password_hash)) {
     return res.status(401).json({ ok: false, error: "Incorrect password." });

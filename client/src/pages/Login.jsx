@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Header from '../components/Header.jsx';
 import Footer from '../components/Footer.jsx';
 import { useAuth } from '../lib/AuthContext.jsx';
+import { API_URL } from '../lib/api';
 
 const navLinks = [
   { to: '/#about', label: 'About' },
@@ -11,7 +12,6 @@ const navLinks = [
   { to: '/reviews', label: 'Reviews' },
 ];
 
-const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
 
 export default function Login() {
   const [email, setEmail] = useState('');
