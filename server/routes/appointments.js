@@ -2,9 +2,19 @@ const express = require("express");
 const { randomUUID } = require("crypto");
 const db = require("../db");
 const { requireRole, asyncHandler } = require("../middleware");
+const hospitalQ = require("../services/hospitalQService");
 
 const router = express.Router();
 const DEPARTMENTS = ["General OPD", "Dental", "Pediatrics"];
+
+// Our department names -> the names HospitalQ uses.
+// IMPORTANT: check these against their GET /api/departments response
+// and change the right-hand side if they are different.
+const HOSPITALQ_DEPARTMENTS = {
+  "General OPD": "general-opd",
+  "Dental": "dental",
+  "Pediatrics": "pediatrics",
+};
 
 function toAppointment(row) {
   return {
@@ -42,13 +52,35 @@ router.post("/", requireRole("artisan"), asyncHandler(async (req, res) => {
     return res.status(400).json({ ok: false, error: "Please choose a valid date that is not in the past." });
   }
 
+  // 1. Send the request to HospitalQ first.
+  //    If this fails we stop, so our database never holds an appointment
+  //    that the hospital does not know about.
+  let hospitalResult;
+  try {
+    hospitalResult = await hospitalQ.checkIn(
+      req.session.user.fullname,
+      HOSPITALQ_DEPARTMENTS[department]
+    );
+  } catch (error) {
+    console.error("HospitalQ check-in failed:", error.message);
+    return res.status(502).json({
+      ok: false,
+      error: "We could not reach the hospital system. Please try again.",
+    });
+  }
+
+  // 2. Save our own copy.
   const id = `a-${randomUUID()}`;
   const { rows } = await db.query(
     "INSERT INTO appointments (id, artisan_id, department, date) VALUES ($1, $2, $3, $4) RETURNING *",
     [id, req.session.user.id, department, date]
   );
 
-  res.status(201).json({ ok: true, appointment: toAppointment(rows[0]) });
+  res.status(201).json({
+    ok: true,
+    appointment: toAppointment(rows[0]),
+    hospitalQ: hospitalResult,
+  });
 }));
 
 module.exports = router;
