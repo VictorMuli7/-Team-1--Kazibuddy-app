@@ -7,6 +7,8 @@ const PgStore = require("connect-pg-simple")(session);
 const cors = require("cors");
 const { pool, initDb } = require("./db");
 
+const app = express();
+
 const hospitalQRoutes = require("./routes/hospitalQ");
 
 app.use(express.json());
@@ -20,7 +22,6 @@ const appointmentsRouter = require("./routes/appointments");
 const reviewsRouter = require("./routes/reviews");
 const artisansRouter = require("./routes/artisans");
 
-const app = express();
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, "..", "web_dev-main");
 
