@@ -51,15 +51,9 @@ app.use(cors({
   exposedHeaders: ["Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
 }));
 
-app.get("/api/health", (req, res) => res.json({ ok: true }));
-
-app.use("/api", requireApiKey(consumers));
-app.use("/api", rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60000,
-  max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
-}));
-
 app.use(express.json({ limit: "100kb" }));
+
+app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 app.use(
   session({
@@ -79,8 +73,18 @@ app.use(
   })
 );
 
+app.use("/api/auth", rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60000,
+  max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
+}), authRouter);
+
+app.use("/api", requireApiKey(consumers));
+app.use("/api", rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60000,
+  max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
+}));
+
 app.use("/api/partners/hospitalq", requireScope("web"), hospitalQRoutes);
-app.use("/api/auth", requireScope("web"), authRouter);
 app.use("/api/users", requireScope("web"), usersRouter);
 app.use("/api/bookings", bookingsRouter);
 app.use("/api/appointments", requireScope("web"), appointmentsRouter);

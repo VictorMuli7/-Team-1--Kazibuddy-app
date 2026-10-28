@@ -86,3 +86,18 @@ test("rate-limits each consumer and returns retry headers", () => {
   assert.equal(second.headers["Retry-After"], second.body.retryAfter.toString());
   assert.equal(second.body.ok, false);
 });
+
+test("rate-limits public requests by client IP when no API consumer is present", () => {
+  const limit = rateLimit({ windowMs: 60000, max: 1 });
+  const req = { ip: "127.0.0.1" };
+  const first = response();
+  let called = false;
+  limit(req, first, () => { called = true; });
+  assert.equal(called, true);
+
+  const second = response();
+  limit(req, second, () => { called = true; });
+  assert.equal(second.statusCode, 429);
+  assert.equal(second.body.ok, false);
+  assert.ok(Number(second.headers["Retry-After"]) >= 1);
+});
