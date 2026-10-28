@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { API_URL } from './api';
+import { API_URL, apiFetch } from './api';
 
 const AuthContext = createContext(null);
 
@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
   // Get the current login session from the Express server
   const refreshSession = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/auth/session`, {
+      const response = await apiFetch(`${API_URL}/auth/session`, {
         credentials: 'include',
       });
 
@@ -38,7 +38,7 @@ export function AuthProvider({ children }) {
   // Log out through the Express server
   const logout = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/auth/logout`, {
+      const response = await apiFetch(`${API_URL}/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });

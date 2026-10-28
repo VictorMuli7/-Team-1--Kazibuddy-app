@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Header from '../components/Header.jsx';
 import Footer from '../components/Footer.jsx';
 import { useAuth } from '../lib/AuthContext.jsx';
-import { API_URL } from '../lib/api';
+import { API_URL, apiFetch } from '../lib/api';
 
 const navLinks = [
   { to: '/#about', label: 'About Jua Kali' },
@@ -96,7 +96,7 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const response = await apiFetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 const express = require("express");
 const db = require("../db");
 const { requireRole, asyncHandler } = require("../middleware");
+const { requireScope } = require("../security");
 
 const router = express.Router();
 
@@ -17,6 +18,18 @@ function toBooking(row) {
         id: row.id,
         customerId: row.customer_id,
         customerName: row.customer_name || "Unknown",
+        service: row.service,
+        artisanId: row.artisan_id,
+        artisanName: row.artisan_name || "Unknown",
+        date: row.date,
+        status: row.status,
+        price: row.price,
+    };
+}
+
+function toPartnerBooking(row) {
+    return {
+        id: row.id,
         service: row.service,
         artisanId: row.artisan_id,
         artisanName: row.artisan_name || "Unknown",
@@ -48,7 +61,7 @@ async function findArtisanForService(serviceTitle) {
 }
 
 /* ---------- GET /api/bookings  (scoped to the signed-in user's role) ---------- */
-router.get("/", requireRole(), asyncHandler(async (req, res) => {
+router.get("/", requireScope("web"), requireRole(), asyncHandler(async (req, res) => {
     const session = req.session.user;
     let result;
     if (session.role === "admin") {
@@ -62,7 +75,7 @@ router.get("/", requireRole(), asyncHandler(async (req, res) => {
 }));
 
 /* ---------- POST /api/bookings  (customer creates a booking) ---------- */
-router.post("/", requireRole("customer"), asyncHandler(async (req, res) => {
+router.post("/", requireScope("web"), requireRole("customer"), asyncHandler(async (req, res) => {
     const { serviceTitle, price, date } = req.body || {};
     if (!serviceTitle || !date) {
         return res.status(400).json({ ok: false, error: "Please choose a service and a date." });
@@ -83,21 +96,17 @@ router.post("/", requireRole("customer"), asyncHandler(async (req, res) => {
     res.json({ ok: true, booking: toBooking(await getBooking(id)) });
 }));
 
-/* ---------- GET /api/bookings/:id  (full record — public, for the organ donation app) ---------- */
-/* NOTE: publicly readable by design (matches openapi.yaml's security: []).
-   This does expose customerName to an external consumer — worth a privacy
-   gut-check with your team before this ships, since it wasn't demanded by
-   a specific need statement, just added for symmetry with /artisans. */
-router.get("/:id", asyncHandler(async (req, res) => {
+/* ---------- GET /api/bookings/:id (partner key; omits customer identity) ---------- */
+router.get("/:id", requireScope("partner"), asyncHandler(async (req, res) => {
     const booking = await getBooking(req.params.id);
     if (!booking) {
         return res.status(404).json({ ok: false, error: "Booking not found." });
     }
-    res.json({ ok: true, booking: toBooking(booking) });
+    res.json({ ok: true, booking: toPartnerBooking(booking) });
 }));
 
-/* ---------- GET /api/bookings/:id/status  (public — the organ donation app's actual need) ---------- */
-router.get("/:id/status", asyncHandler(async (req, res) => {
+/* ---------- GET /api/bookings/:id/status (partner key) ---------- */
+router.get("/:id/status", requireScope("partner"), asyncHandler(async (req, res) => {
     const { rows } = await db.query("SELECT status FROM bookings WHERE id = $1", [req.params.id]);
     if (!rows[0]) {
         return res.status(404).json({ ok: false, error: "Booking not found." });
@@ -109,7 +118,7 @@ router.get("/:id/status", asyncHandler(async (req, res) => {
 /* This replaces the old PATCH /api/bookings/:id — same logic, moved to the
    dedicated /status path per the design decision in ENDPOINT_LIST.md /
    openapi.yaml, to avoid two routes doing the same job. */
-router.patch("/:id/status", requireRole("artisan"), asyncHandler(async (req, res) => {
+router.patch("/:id/status", requireScope("web"), requireRole("artisan"), asyncHandler(async (req, res) => {
     const { status } = req.body || {};
     if (!["upcoming", "declined", "completed"].includes(status)) {
         return res.status(400).json({ ok: false, error: "Invalid status." });

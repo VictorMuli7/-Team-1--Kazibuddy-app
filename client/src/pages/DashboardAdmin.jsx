@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header.jsx';
 import Footer from '../components/Footer.jsx';
 import { useAuth } from '../lib/AuthContext.jsx';
-import { API_URL } from '../lib/api';
+import { API_URL, apiFetch } from '../lib/api';
 
 
 const navLinks = [
@@ -28,10 +28,10 @@ export default function DashboardAdmin() {
       setError('');
 
       const [usersResponse, bookingsResponse] = await Promise.all([
-        fetch(`${API_URL}/users`, {
+        apiFetch(`${API_URL}/users`, {
           credentials: 'include',
         }),
-        fetch(`${API_URL}/bookings`, {
+        apiFetch(`${API_URL}/bookings`, {
           credentials: 'include',
         }),
       ]);
@@ -131,7 +131,7 @@ export default function DashboardAdmin() {
     setError('');
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_URL}/users/${id}`,
         {
           method: 'PATCH',

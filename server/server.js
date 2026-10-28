@@ -6,14 +6,11 @@ const session = require("express-session");
 const PgStore = require("connect-pg-simple")(session);
 const cors = require("cors");
 const { pool, initDb } = require("./db");
+const { parseApiKeys, requireApiKey, requireScope, rateLimit } = require("./security");
 
 const app = express();
 
 const hospitalQRoutes = require("./routes/hospitalQ");
-
-app.use(express.json());
-
-app.use("/api/partners/hospitalq", hospitalQRoutes);
 
 const { router: authRouter } = require("./routes/auth");
 const usersRouter = require("./routes/users");
@@ -27,6 +24,15 @@ const PUBLIC_DIR = path.join(__dirname, "..", "web_dev-main");
 
 // Render sets RENDER=true on its services; NODE_ENV=production covers other hosts.
 const isProd = process.env.NODE_ENV === "production" || !!process.env.RENDER;
+if (isProd && !process.env.SESSION_SECRET) {
+  console.error("SESSION_SECRET is not set. Refusing to start in production with the built-in default secret.");
+  process.exit(1);
+}
+const consumers = parseApiKeys();
+console.log(`API keys loaded: ${consumers.length} (${consumers.map((consumer) => `${consumer.label}/${consumer.scope}`).join(", ") || "none"})`);
+if (!consumers.length) {
+  console.warn("WARNING: no API keys configured (API_KEYS). Every /api request will be rejected with 401.");
+}
 
 // On Render the app sits behind a proxy that terminates HTTPS. Without this,
 // Express thinks the request is plain HTTP and refuses to set a "secure" cookie.
@@ -39,8 +45,21 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "")
   .map((o) => o.trim().replace(/\/$/, ""))
   .filter(Boolean);
 
-app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : true, credentials: true }));
-app.use(express.json());
+app.use(cors({
+  origin: allowedOrigins.length ? allowedOrigins : true,
+  credentials: true,
+  exposedHeaders: ["Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
+}));
+
+app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+app.use("/api", requireApiKey(consumers));
+app.use("/api", rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60000,
+  max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
+}));
+
+app.use(express.json({ limit: "100kb" }));
 
 app.use(
   session({
@@ -60,12 +79,15 @@ app.use(
   })
 );
 
-app.use("/api/auth", authRouter);
-app.use("/api/users", usersRouter);
+app.use("/api/partners/hospitalq", requireScope("web"), hospitalQRoutes);
+app.use("/api/auth", requireScope("web"), authRouter);
+app.use("/api/users", requireScope("web"), usersRouter);
 app.use("/api/bookings", bookingsRouter);
-app.use("/api/appointments", appointmentsRouter);
-app.use("/api/reviews", reviewsRouter);
-app.use("/api/artisans", artisansRouter);
+app.use("/api/appointments", requireScope("web"), appointmentsRouter);
+app.use("/api/reviews", requireScope("web"), reviewsRouter);
+app.use("/api/artisans", requireScope("partner"), artisansRouter);
+
+app.use("/api", (req, res) => res.status(404).json({ ok: false, error: "Not found." }));
 
 // Serve the frontend (index.html, css/, js/, assets/) as static files
 app.use(express.static(PUBLIC_DIR));
@@ -73,8 +95,14 @@ app.use(express.static(PUBLIC_DIR));
 // Last-resort error handler: database/driver errors from async routes land here.
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error(err);
   if (res.headersSent) return next(err);
+  if (err.type === "entity.parse.failed") {
+    return res.status(400).json({ ok: false, error: "Request body is not valid JSON." });
+  }
+  if (err.type === "entity.too.large") {
+    return res.status(413).json({ ok: false, error: "Request body is too large." });
+  }
+  console.error(err);
   res.status(500).json({ ok: false, error: "Something went wrong on the server. Please try again." });
 });
 

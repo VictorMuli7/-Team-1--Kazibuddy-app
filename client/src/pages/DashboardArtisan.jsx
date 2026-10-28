@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header.jsx';
 import Footer from '../components/Footer.jsx';
 import { useAuth } from '../lib/AuthContext.jsx';
-import { API_URL } from '../lib/api';
+import { API_URL, apiFetch } from '../lib/api';
 
 
 const navLinks = [
@@ -42,7 +42,7 @@ export default function DashboardArtisan() {
     if (!session) return;
 
     try {
-      const response = await fetch(`${API_URL}/bookings`, {
+      const response = await apiFetch(`${API_URL}/bookings`, {
         credentials: 'include',
       });
 
@@ -68,7 +68,7 @@ export default function DashboardArtisan() {
     if (!session) return;
 
     try {
-      const response = await fetch(`${API_URL}/users/me`, {
+      const response = await apiFetch(`${API_URL}/users/me`, {
         credentials: 'include',
       });
 
@@ -91,7 +91,7 @@ export default function DashboardArtisan() {
     if (!session) return;
 
     try {
-      const response = await fetch(`${API_URL}/appointments`, {
+      const response = await apiFetch(`${API_URL}/appointments`, {
         credentials: 'include',
       });
       const data = await response.json();
@@ -137,7 +137,7 @@ export default function DashboardArtisan() {
     setAppointmentLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/appointments`, {
+      const response = await apiFetch(`${API_URL}/appointments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -182,7 +182,7 @@ export default function DashboardArtisan() {
     setError('');
 
     try {
-      const response = await fetch(`${API_URL}/bookings/${id}/status`, {
+      const response = await apiFetch(`${API_URL}/bookings/${id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -215,7 +215,7 @@ export default function DashboardArtisan() {
     setError('');
 
     try {
-      const response = await fetch(`${API_URL}/users/me`, {
+      const response = await apiFetch(`${API_URL}/users/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

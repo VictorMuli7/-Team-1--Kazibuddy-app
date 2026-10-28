@@ -1,11 +1,9 @@
 
-const API_BASE =
-  import.meta.env.VITE_API_URL ||
-  "https://team-1-kazibuddy-app.onrender.com";
+import { API_URL, apiFetch } from "../lib/api";
 
 async function apiRequest(path, options = {}) {
-  const response = await fetch(
-    `${API_BASE}/api/partners/hospitalq${path}`,
+  const response = await apiFetch(
+    `${API_URL}/partners/hospitalq${path}`,
     {
       ...options,
       headers: {

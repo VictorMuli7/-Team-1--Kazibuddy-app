@@ -8,3 +8,15 @@
 export const API_URL =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? 'http://localhost:3000/api' : '/api');
+
+const API_KEY = import.meta.env.VITE_API_KEY;
+if (!API_KEY) {
+  console.warn('VITE_API_KEY is not set: every API request will be rejected with 401.');
+}
+
+export function apiFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: { ...(options.headers || {}), 'X-API-Key': API_KEY || '' },
+  });
+}
