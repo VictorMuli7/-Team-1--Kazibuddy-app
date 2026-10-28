@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { parseApiKeys, requireApiKey, requireScope, rateLimit } = require("../security");
+const { parseApiKeys, requireApiKey, requireScope, rateLimit } = require("../middleware/apiSecurity");
 
 function response() {
   return {

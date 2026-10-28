@@ -6,7 +6,7 @@ const session = require("express-session");
 const PgStore = require("connect-pg-simple")(session);
 const cors = require("cors");
 const { pool, initDb } = require("./db");
-const { parseApiKeys, requireApiKey, requireScope, rateLimit } = require("./security");
+const { parseApiKeys, requireApiKey, requireScope, rateLimit } = require("./middleware/apiSecurity");
 
 const app = express();
 

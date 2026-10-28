@@ -1,7 +1,7 @@
 const express = require("express");
 const db = require("../db");
 const { requireRole, asyncHandler } = require("../middleware");
-const { requireScope } = require("../security");
+const { requireScope } = require("../middleware/apiSecurity");
 
 const router = express.Router();
 
