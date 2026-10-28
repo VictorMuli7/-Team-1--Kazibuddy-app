@@ -1,6 +1,6 @@
 const express = require("express");
-const db = require("../db");
-const { requireRole } = require("../middleware");
+const { pool } = require("../db");
+const { requireRole, asyncHandler } = require("../middleware");
 
 const router = express.Router();
 
@@ -11,47 +11,53 @@ function toPublicUser(row) {
 }
 
 /* ---------- GET /api/users  (admin only) ---------- */
-router.get("/", requireRole("admin"), (req, res) => {
-  const users = db.prepare("SELECT * FROM users ORDER BY joined DESC").all().map(toPublicUser);
+router.get("/", requireRole("admin"), asyncHandler(async (req, res) => {
+  const result = await pool.query("SELECT * FROM users ORDER BY joined DESC");
+  const users = result.rows.map(toPublicUser);
   res.json({ ok: true, users });
-});
+}));
 
 /* ---------- GET /api/users/me  (own profile, any signed-in role) ---------- */
-router.get("/me", requireRole(), (req, res) => {
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.session.user.id);
+router.get("/me", requireRole(), asyncHandler(async (req, res) => {
+  const result = await pool.query("SELECT * FROM users WHERE id = $1", [req.session.user.id]);
+  const user = result.rows[0];
   res.json({ ok: true, user: toPublicUser(user) });
-});
+}));
 
 /* ---------- PATCH /api/users/me  (artisan updates their own listing) ---------- */
-router.patch("/me", requireRole("artisan"), (req, res) => {
+router.patch("/me", requireRole("artisan"), asyncHandler(async (req, res) => {
   const { rate, bio } = req.body || {};
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.session.user.id);
+  const result = await pool.query("SELECT * FROM users WHERE id = $1", [req.session.user.id]);
+  const user = result.rows[0];
   if (!user) return res.status(404).json({ ok: false, error: "User not found." });
 
-  db.prepare("UPDATE users SET rate = ?, bio = ? WHERE id = ?").run(
+  await pool.query("UPDATE users SET rate = $1, bio = $2 WHERE id = $3", [
     rate !== undefined ? rate : user.rate,
     bio !== undefined ? bio : user.bio,
     user.id
-  );
+  ]);
 
-  const updated = db.prepare("SELECT * FROM users WHERE id = ?").get(user.id);
+  const updatedResult = await pool.query("SELECT * FROM users WHERE id = $1", [user.id]);
+  const updated = updatedResult.rows[0];
   res.json({ ok: true, user: toPublicUser(updated) });
-});
+}));
 
 /* ---------- PATCH /api/users/:id  (admin only — verify / suspend / activate) ---------- */
-router.patch("/:id", requireRole("admin"), (req, res) => {
+router.patch("/:id", requireRole("admin"), asyncHandler(async (req, res) => {
   const { verified, status } = req.body || {};
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
+  const result = await pool.query("SELECT * FROM users WHERE id = $1", [req.params.id]);
+  const user = result.rows[0];
   if (!user) return res.status(404).json({ ok: false, error: "User not found." });
 
   const next = {
-    verified: typeof verified === "boolean" ? (verified ? 1 : 0) : user.verified,
+    verified: typeof verified === "boolean" ? verified : user.verified,
     status: status || user.status,
   };
-  db.prepare("UPDATE users SET verified = ?, status = ? WHERE id = ?").run(next.verified, next.status, user.id);
+  await pool.query("UPDATE users SET verified = $1, status = $2 WHERE id = $3", [next.verified, next.status, user.id]);
 
-  const updated = db.prepare("SELECT * FROM users WHERE id = ?").get(user.id);
+  const updatedResult = await pool.query("SELECT * FROM users WHERE id = $1", [user.id]);
+  const updated = updatedResult.rows[0];
   res.json({ ok: true, user: toPublicUser(updated) });
-});
+}));
 
 module.exports = router;

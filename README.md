@@ -294,25 +294,49 @@ Every failed response has the same shape. The field is called `error` (not `mess
 
 ## Run the API locally
 
-**You need:** [Node.js](https://nodejs.org) (current LTS recommended) with npm, and [git](https://git-scm.com).
+**You need:** [Node.js](https://nodejs.org) (current LTS recommended) with npm, [git](https://git-scm.com), and a PostgreSQL database.
 
 ```bash
 git clone https://github.com/VictorMuli7/-Team-1--Kazibuddy-app.git
 cd ./-Team-1--Kazibuddy-app/server
 npm install
+```
+
+Set `DATABASE_URL` to your PostgreSQL connection string before running the server. In PowerShell:
+
+```powershell
+$env:DATABASE_URL="postgresql://postgres:password@localhost:5432/juakali"
+```
+
+To preserve the existing SQLite records, migrate them once into an empty PostgreSQL database:
+
+```bash
+npm run migrate:sqlite
+```
+
+The migration reads `server/juakali.db` by default. To use a different SQLite file, pass its path:
+
+```bash
+npm run migrate:sqlite -- "C:\path\to\juakali.db"
+```
+
+The migration refuses to import into tables that already contain records. Back up the SQLite file and confirm `DATABASE_URL` points to the intended PostgreSQL database before running it. On Render, run this migration once with the service's internal database URL before starting the application.
+
+Start the server:
+
+```bash
 npm start
 ```
 
 > The folder name starts with a dash, so type `cd ./-Team-1--Kazibuddy-app/server` exactly as written (with the `./`). Without it, the terminal reads the name as an option and `cd` fails.
 
-You should see:
+The server creates the PostgreSQL tables automatically and then prints:
 
 ```
-Database seeded with initial demo data.
 Jua Kali server running at http://localhost:3000
 ```
 
-Leave this terminal running and use a second terminal for the `curl` commands above. The database file (`server/juakali.db`) and the demo data are created automatically on the first start, so no seeding step is needed.
+Leave this terminal running and use a second terminal for the `curl` commands above. Existing demo users and records are available after migrating the existing SQLite database. A fresh PostgreSQL database starts without sample accounts; users can register through the app.
 
 **Check that it works:**
 
@@ -322,6 +346,6 @@ curl http://localhost:3000/api/artisans
 
 You should see JSON starting with `{"ok":true,"artisans":[`.
 
-**Reset the demo data** (for example after trying the PATCH): stop the server with `Ctrl+C`, delete the `juakali.db`, `juakali.db-shm` and `juakali.db-wal` files inside `server/`, then run `npm start` again.
+Changes are stored in PostgreSQL. To reset local test data, clear the PostgreSQL tables or use a separate development database; deleting the SQLite file does not reset PostgreSQL.
 
 **Port already in use?** Start on another port: `PORT=3001 npm start` (macOS/Linux) or `$env:PORT=3001; npm start` (PowerShell), and use that port in the URLs.

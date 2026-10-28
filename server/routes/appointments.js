@@ -1,7 +1,7 @@
 const express = require("express");
 const { randomUUID } = require("crypto");
-const db = require("../db");
-const { requireRole } = require("../middleware");
+const { pool } = require("../db");
+const { requireRole, asyncHandler } = require("../middleware");
 
 const router = express.Router();
 const DEPARTMENTS = ["General OPD", "Dental", "Pediatrics"];
@@ -16,15 +16,16 @@ function toAppointment(row) {
   };
 }
 
-router.get("/", requireRole("artisan"), (req, res) => {
-  const appointments = db.prepare(
-    "SELECT * FROM appointments WHERE artisan_id = ? ORDER BY date DESC, created_at DESC"
-  ).all(req.session.user.id);
+router.get("/", requireRole("artisan"), asyncHandler(async (req, res) => {
+  const result = await pool.query(
+    "SELECT * FROM appointments WHERE artisan_id = $1 ORDER BY date DESC, created_at DESC",
+    [req.session.user.id]
+  );
 
-  res.json({ ok: true, appointments: appointments.map(toAppointment) });
-});
+  res.json({ ok: true, appointments: result.rows.map(toAppointment) });
+}));
 
-router.post("/", requireRole("artisan"), (req, res) => {
+router.post("/", requireRole("artisan"), asyncHandler(async (req, res) => {
   const { department, date } = req.body || {};
 
   if (!DEPARTMENTS.includes(department)) {
@@ -42,12 +43,13 @@ router.post("/", requireRole("artisan"), (req, res) => {
   }
 
   const id = `a-${randomUUID()}`;
-  db.prepare(
-    "INSERT INTO appointments (id, artisan_id, department, date) VALUES (?, ?, ?, ?)"
-  ).run(id, req.session.user.id, department, date);
+  const result = await pool.query(
+    "INSERT INTO appointments (id, artisan_id, department, date) VALUES ($1, $2, $3, $4) RETURNING *",
+    [id, req.session.user.id, department, date]
+  );
 
-  const appointment = db.prepare("SELECT * FROM appointments WHERE id = ?").get(id);
+  const appointment = result.rows[0];
   res.status(201).json({ ok: true, appointment: toAppointment(appointment) });
-});
+}));
 
 module.exports = router;

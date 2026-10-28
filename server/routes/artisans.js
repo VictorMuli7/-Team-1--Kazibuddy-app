@@ -1,5 +1,6 @@
 const express = require("express");
-const db = require("../db");
+const { pool } = require("../db");
+const { asyncHandler } = require("../middleware");
 
 const router = express.Router();
 
@@ -28,38 +29,40 @@ function toArtisanPublic(row) {
    donation app needs to read verified artisans and their services."
    Defaults to verified-only unless ?verified=false is passed explicitly,
    since the need statement specifically says "verified artisans". */
-router.get("/", (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
     const { skill, verified } = req.query;
 
     let sql = "SELECT * FROM users WHERE role = 'artisan'";
     const params = [];
 
     const verifiedFilter = verified === undefined ? true : verified === "true";
-    sql += " AND verified = ?";
-    params.push(verifiedFilter ? 1 : 0);
+    sql += " AND verified = $1";
+    params.push(verifiedFilter);
 
     if (skill) {
-        sql += " AND lower(skill) = lower(?)";
+        sql += " AND lower(skill) = lower($2)";
         params.push(skill);
     }
 
     sql += " ORDER BY fullname ASC";
 
-    const rows = db.prepare(sql).all(...params);
-    res.json({ ok: true, artisans: rows.map(toArtisanPublic) });
-});
+    const result = await pool.query(sql, params);
+    res.json({ ok: true, artisans: result.rows.map(toArtisanPublic) });
+}));
 
 /* ---------- GET /api/artisans/:id ---------- */
-router.get("/:id", (req, res) => {
-    const row = db
-        .prepare("SELECT * FROM users WHERE id = ? AND role = 'artisan'")
-        .get(req.params.id);
+router.get("/:id", asyncHandler(async (req, res) => {
+    const result = await pool.query(
+        "SELECT * FROM users WHERE id = $1 AND role = 'artisan'",
+        [req.params.id]
+    );
+    const row = result.rows[0];
 
     if (!row) {
         return res.status(404).json({ ok: false, error: "Artisan not found." });
     }
 
     res.json({ ok: true, artisan: toArtisanPublic(row) });
-});
+}));
 
 module.exports = router;

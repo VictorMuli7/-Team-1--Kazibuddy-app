@@ -1,16 +1,17 @@
 const express = require("express");
-const db = require("../db");
+const { pool } = require("../db");
+const { asyncHandler } = require("../middleware");
 
 const router = express.Router();
 
 /* ---------- GET /api/reviews ---------- */
-router.get("/", (req, res) => {
-  const reviews = db.prepare("SELECT * FROM reviews ORDER BY id DESC").all();
-  res.json({ ok: true, reviews });
-});
+router.get("/", asyncHandler(async (req, res) => {
+  const result = await pool.query("SELECT * FROM reviews ORDER BY id DESC");
+  res.json({ ok: true, reviews: result.rows });
+}));
 
 /* ---------- POST /api/reviews ---------- */
-router.post("/", (req, res) => {
+router.post("/", asyncHandler(async (req, res) => {
   const { name, category, stars, text } = req.body || {};
   const ratingNum = parseInt(stars, 10);
 
@@ -20,12 +21,13 @@ router.post("/", (req, res) => {
   if (!text || text.trim().length < 10) return res.status(400).json({ ok: false, error: "Please write at least 10 characters in your review." });
 
   const date = new Date().toISOString().slice(0, 10);
-  const info = db.prepare(
-    "INSERT INTO reviews (name, category, stars, date, text) VALUES (?, ?, ?, ?, ?)"
-  ).run(String(name).trim(), category, ratingNum, date, text.trim());
+  const result = await pool.query(
+    "INSERT INTO reviews (name, category, stars, date, text) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+    [String(name).trim(), category, ratingNum, date, text.trim()]
+  );
 
-  const review = db.prepare("SELECT * FROM reviews WHERE id = ?").get(info.lastInsertRowid);
+  const review = result.rows[0];
   res.json({ ok: true, review });
-});
+}));
 
 module.exports = router;

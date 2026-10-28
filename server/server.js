@@ -2,9 +2,9 @@ const fs = require("fs");
 const path = require("path");
 const express = require("express");
 const session = require("express-session");
-const SqliteStore = require("better-sqlite3-session-store")(session);
+const PgSession = require("connect-pg-simple")(session);
 const cors = require("cors");
-const db = require("./db");
+const { pool, initializeDatabase } = require("./db");
 const hospitalQRoutes = require("./routes/hospitalq");
 
 const { router: authRouter } = require("./routes/auth");
@@ -49,9 +49,9 @@ if (process.env.NODE_ENV === "production") {
 
 app.use(
   session({
-    store: new SqliteStore({
-      client: db,
-      expired: { clear: true, intervalMs: 15 * 60 * 1000 },
+    store: new PgSession({
+      pool,
+      createTableIfMissing: true,
     }),
     secret: SESSION_SECRET,
     resave: false,
@@ -74,6 +74,12 @@ app.use("/api/appointments", appointmentsRouter);
 app.use("/api/reviews", reviewsRouter);
 app.use("/api/artisans", artisansRouter);
 
+app.use((error, req, res, next) => {
+  console.error("Request failed:", error);
+  if (res.headersSent) return next(error);
+  res.status(500).json({ ok: false, error: "An unexpected server error occurred." });
+});
+
 app.use(express.static(PUBLIC_DIR));
 
 app.get(/^(?!\/api).*/, (req, res, next) => {
@@ -85,7 +91,14 @@ app.get(/^(?!\/api).*/, (req, res, next) => {
   next();
 });
 
-app.listen(PORT, () => {
-  console.log(`Jua Kali server running at http://localhost:${PORT}`);
-  console.log(`Database file: ${path.join(__dirname, "juakali.db")}`);
-});
+initializeDatabase()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Jua Kali server running at http://localhost:${PORT}`);
+      console.log("Connected to PostgreSQL.");
+    });
+  })
+  .catch((error) => {
+    console.error("Failed to initialize PostgreSQL:", error);
+    process.exitCode = 1;
+  });
