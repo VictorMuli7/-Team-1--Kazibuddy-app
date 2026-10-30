@@ -24,7 +24,7 @@ function enrich(booking) {
    skill matches; falls back to any verified/active artisan. */
 function findArtisanForService(serviceTitle) {
     const artisans = db.prepare(
-        "SELECT * FROM users WHERE role = 'artisan' AND status = 'active' AND verified = 1"
+        "SELECT * FROM users WHERE role = 'artisan' AND status = 'active' AND verified = 1 AND injured = 0"
     ).all();
     const norm = (s) => (s || "").toLowerCase();
     const direct = artisans.find((a) => norm(a.skill) === norm(serviceTitle));
@@ -115,4 +115,3 @@ router.patch("/:id/status", requireRole("artisan"), (req, res) => {
 });
 
 module.exports = router;
-

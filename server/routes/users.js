@@ -7,7 +7,7 @@ const router = express.Router();
 function toPublicUser(row) {
   if (!row) return null;
   const { password_hash, ...rest } = row;
-  return { ...rest, verified: !!rest.verified };
+  return { ...rest, verified: !!rest.verified, injured: !!rest.injured };
 }
 
 /* ---------- GET /api/users  (admin only) ---------- */
@@ -24,13 +24,17 @@ router.get("/me", requireRole(), (req, res) => {
 
 /* ---------- PATCH /api/users/me  (artisan updates their own listing) ---------- */
 router.patch("/me", requireRole("artisan"), (req, res) => {
-  const { rate, bio } = req.body || {};
+  const { rate, bio, injured } = req.body || {};
+  if (injured !== undefined && typeof injured !== "boolean") {
+    return res.status(400).json({ ok: false, error: "Injury status must be a boolean." });
+  }
   const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.session.user.id);
   if (!user) return res.status(404).json({ ok: false, error: "User not found." });
 
-  db.prepare("UPDATE users SET rate = ?, bio = ? WHERE id = ?").run(
+  db.prepare("UPDATE users SET rate = ?, bio = ?, injured = ? WHERE id = ?").run(
     rate !== undefined ? rate : user.rate,
     bio !== undefined ? bio : user.bio,
+    injured !== undefined ? (injured ? 1 : 0) : user.injured,
     user.id
   );
 

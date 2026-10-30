@@ -25,6 +25,7 @@ db.exec(`
     joined        TEXT NOT NULL,
     skill         TEXT,
     verified      INTEGER NOT NULL DEFAULT 0,
+    injured       INTEGER NOT NULL DEFAULT 0 CHECK (injured IN (0, 1)),
     bio           TEXT,
     rate          TEXT,
     blood_type    TEXT CHECK (blood_type IS NULL OR blood_type IN ('A','B','AB','O')),
@@ -69,6 +70,9 @@ if (!userColumns.has("blood_type")) {
 }
 if (!userColumns.has("rhesus_factor")) {
   db.exec("ALTER TABLE users ADD COLUMN rhesus_factor TEXT CHECK (rhesus_factor IS NULL OR rhesus_factor IN ('positive','negative'))");
+}
+if (!userColumns.has("injured")) {
+  db.exec("ALTER TABLE users ADD COLUMN injured INTEGER NOT NULL DEFAULT 0 CHECK (injured IN (0, 1))");
 }
 
 /* ---------- Seed once, only if the users table is empty ---------- */
