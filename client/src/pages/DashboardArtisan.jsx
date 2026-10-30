@@ -25,7 +25,6 @@ export default function DashboardArtisan() {
 
   const [rate, setRate] = useState('');
   const [bio, setBio] = useState('');
-  const [injured, setInjured] = useState(false);
   const [appointmentDepartment, setAppointmentDepartment] = useState('');
   const [appointmentDate, setAppointmentDate] = useState('');
   const [appointmentLoading, setAppointmentLoading] = useState(false);
@@ -82,7 +81,6 @@ export default function DashboardArtisan() {
       setUser(data.user);
       setRate(data.user?.rate || '');
       setBio(data.user?.bio || '');
-      setInjured(data.user?.injured === true);
     } catch (err) {
       console.error('Profile loading error:', err);
       setError(err.message || 'Unable to load your profile.');
@@ -226,7 +224,6 @@ export default function DashboardArtisan() {
         body: JSON.stringify({
           rate: rate.trim(),
           bio: bio.trim(),
-          injured,
         }),
       });
 
@@ -239,7 +236,6 @@ export default function DashboardArtisan() {
       setUser(data.user);
       setRate(data.user?.rate || '');
       setBio(data.user?.bio || '');
-      setInjured(data.user?.injured === true);
 
       setListingMsg('Listing saved.');
 
@@ -697,19 +693,6 @@ export default function DashboardArtisan() {
                 onChange={(e) => setBio(e.target.value)}
               />
 
-            </div>
-
-            <div className="form-group">
-              <label className="dashboard-checkbox-label">
-                <input
-                  type="checkbox"
-                  name="injured"
-                  className="dashboard-checkbox"
-                  checked={injured}
-                  onChange={(e) => setInjured(e.target.checked)}
-                />
-                I am currently injured
-              </label>
             </div>
 
             <p

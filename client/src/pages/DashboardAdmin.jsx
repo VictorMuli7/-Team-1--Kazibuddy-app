@@ -311,7 +311,6 @@ export default function DashboardAdmin() {
                   <th>Name</th>
                   <th>Role</th>
                   <th>Skill</th>
-                  <th>Injured</th>
                   <th>Joined</th>
                   <th>Status</th>
                   <th>Action</th>
@@ -347,12 +346,6 @@ export default function DashboardAdmin() {
 
                     <td>
                       {u.skill || '—'}
-                    </td>
-
-                    <td>
-                      {u.role === 'artisan'
-                        ? (u.injured ? 'Yes' : 'No')
-                        : '—'}
                     </td>
 
                     <td>

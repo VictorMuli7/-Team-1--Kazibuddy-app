@@ -791,8 +791,6 @@ ol, ul { padding-left: 20px; margin: 0; list-style-position: inside; }
 .dashboard-form .form-group { margin-bottom: 0.8rem; }
 .dashboard-form-row { display: flex; gap: 14px; flex-wrap: wrap; }
 .dashboard-form-row .form-group { flex: 1; min-width: 180px; }
-.dashboard-form .dashboard-checkbox-label { display: flex; align-items: center; gap: 0.5rem; }
-.dashboard-form .form-group input.dashboard-checkbox { width: auto; padding: 0; }
 
 /* Admin filter row */
 .dashboard-filter-row {

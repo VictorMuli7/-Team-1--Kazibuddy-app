@@ -46,10 +46,6 @@ async function getBooking(id) {
 
 /* Finds an artisan for a service: prefers a verified, active artisan whose
    skill matches; falls back to any verified/active artisan. */
-function findArtisanForService(serviceTitle) {
-    const artisans = db.prepare(
-        "SELECT * FROM users WHERE role = 'artisan' AND status = 'active' AND verified = 1 AND injured = 0"
-    ).all();
 async function findArtisanForService(serviceTitle) {
     const { rows: artisans } = await db.query(
         "SELECT * FROM users WHERE role = 'artisan' AND status = 'active' AND verified = TRUE ORDER BY joined, id"
