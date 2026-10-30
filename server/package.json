@@ -1,22 +1,22 @@
 {
   "name": "juakali-server",
   "version": "1.0.0",
-  "description": "Jua Kali backend API + static server (SQLite database)",
+  "description": "Jua Kali backend API + static server (PostgreSQL database)",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "migrate:sqlite": "node scripts/migrate-sqlite-to-postgres.js",
+    "test": "node --test test/security.test.js"
   },
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
+    "bcryptjs": "^2.4.3",
+    "connect-pg-simple": "^10.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
     "express": "^4.19.2",
     "express-session": "^1.18.0",
-    "bcryptjs": "^2.4.3",
-    "better-sqlite3-session-store": "^0.1.0",
-    "cors": "^2.8.5"
-  },
-  "allowScripts": {
-    "better-sqlite3@13.0.3": true
+    "pg": "^8.13.0"
   }
 }

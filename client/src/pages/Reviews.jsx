@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import Header from '../components/Header.jsx';
 import Footer from '../components/Footer.jsx';
 import { seedReviews, categoryData } from '../data/reviews.js';
+import { API_URL, apiFetch } from '../lib/api';
 
-const API_URL = 'http://localhost:3000/api';
 
 const navLinks = [
   { to: '/#about', label: 'About' },
@@ -43,7 +43,7 @@ export default function Reviews() {
   useEffect(() => {
     async function loadReviews() {
       try {
-        const response = await fetch(`${API_URL}/reviews`);
+        const response = await apiFetch(`${API_URL}/reviews`);
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
@@ -108,7 +108,7 @@ export default function Reviews() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/reviews`, {
+      const response = await apiFetch(`${API_URL}/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,23 +1,47 @@
 const express = require("express");
 const db = require("../db");
-const { requireRole } = require("../middleware");
+const { requireRole, asyncHandler } = require("../middleware");
+const { requireScope } = require("../middleware/apiSecurity");
 
 const router = express.Router();
 
-function enrich(booking) {
-    const customer = db.prepare("SELECT fullname FROM users WHERE id = ?").get(booking.customer_id);
-    const artisan = db.prepare("SELECT fullname FROM users WHERE id = ?").get(booking.artisan_id);
+/* One query returns each booking together with the customer's and artisan's
+   names, instead of two extra lookups per booking. */
+const BOOKING_SELECT = `
+    SELECT b.*, c.fullname AS customer_name, a.fullname AS artisan_name
+    FROM bookings b
+    LEFT JOIN users c ON c.id = b.customer_id
+    LEFT JOIN users a ON a.id = b.artisan_id`;
+
+function toBooking(row) {
     return {
-        id: booking.id,
-        customerId: booking.customer_id,
-        customerName: customer ? customer.fullname : "Unknown",
-        service: booking.service,
-        artisanId: booking.artisan_id,
-        artisanName: artisan ? artisan.fullname : "Unknown",
-        date: booking.date,
-        status: booking.status,
-        price: booking.price,
+        id: row.id,
+        customerId: row.customer_id,
+        customerName: row.customer_name || "Unknown",
+        service: row.service,
+        artisanId: row.artisan_id,
+        artisanName: row.artisan_name || "Unknown",
+        date: row.date,
+        status: row.status,
+        price: row.price,
     };
+}
+
+function toPartnerBooking(row) {
+    return {
+        id: row.id,
+        service: row.service,
+        artisanId: row.artisan_id,
+        artisanName: row.artisan_name || "Unknown",
+        date: row.date,
+        status: row.status,
+        price: row.price,
+    };
+}
+
+async function getBooking(id) {
+    const { rows } = await db.query(`${BOOKING_SELECT} WHERE b.id = $1`, [id]);
+    return rows[0] || null;
 }
 
 /* Finds an artisan for a service: prefers a verified, active artisan whose
@@ -26,6 +50,10 @@ function findArtisanForService(serviceTitle) {
     const artisans = db.prepare(
         "SELECT * FROM users WHERE role = 'artisan' AND status = 'active' AND verified = 1 AND injured = 0"
     ).all();
+async function findArtisanForService(serviceTitle) {
+    const { rows: artisans } = await db.query(
+        "SELECT * FROM users WHERE role = 'artisan' AND status = 'active' AND verified = TRUE ORDER BY joined, id"
+    );
     const norm = (s) => (s || "").toLowerCase();
     const direct = artisans.find((a) => norm(a.skill) === norm(serviceTitle));
     if (direct) return direct;
@@ -37,81 +65,77 @@ function findArtisanForService(serviceTitle) {
 }
 
 /* ---------- GET /api/bookings  (scoped to the signed-in user's role) ---------- */
-router.get("/", requireRole(), (req, res) => {
+router.get("/", requireScope("web"), requireRole(), asyncHandler(async (req, res) => {
     const session = req.session.user;
-    let rows;
+    let result;
     if (session.role === "admin") {
-        rows = db.prepare("SELECT * FROM bookings").all();
+        result = await db.query(`${BOOKING_SELECT} ORDER BY b.date DESC, b.id`);
     } else if (session.role === "artisan") {
-        rows = db.prepare("SELECT * FROM bookings WHERE artisan_id = ?").all(session.id);
+        result = await db.query(`${BOOKING_SELECT} WHERE b.artisan_id = $1 ORDER BY b.date DESC, b.id`, [session.id]);
     } else {
-        rows = db.prepare("SELECT * FROM bookings WHERE customer_id = ?").all(session.id);
+        result = await db.query(`${BOOKING_SELECT} WHERE b.customer_id = $1 ORDER BY b.date DESC, b.id`, [session.id]);
     }
-    res.json({ ok: true, bookings: rows.map(enrich) });
-});
+    res.json({ ok: true, bookings: result.rows.map(toBooking) });
+}));
 
 /* ---------- POST /api/bookings  (customer creates a booking) ---------- */
-router.post("/", requireRole("customer"), (req, res) => {
+router.post("/", requireScope("web"), requireRole("customer"), asyncHandler(async (req, res) => {
     const { serviceTitle, price, date } = req.body || {};
     if (!serviceTitle || !date) {
         return res.status(400).json({ ok: false, error: "Please choose a service and a date." });
     }
 
-    const artisan = findArtisanForService(serviceTitle);
+    const artisan = await findArtisanForService(serviceTitle);
     if (!artisan) {
         return res.status(409).json({ ok: false, error: "No artisan is currently available for this service. Please try again later." });
     }
 
     const id = "b-" + Date.now();
-    db.prepare(`
-    INSERT INTO bookings (id, customer_id, service, artisan_id, date, status, price)
-    VALUES (?, ?, ?, ?, ?, 'pending', ?)
-  `).run(id, req.session.user.id, serviceTitle, artisan.id, date, price || null);
+    await db.query(
+        `INSERT INTO bookings (id, customer_id, service, artisan_id, date, status, price)
+         VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
+        [id, req.session.user.id, serviceTitle, artisan.id, date, price || null]
+    );
 
-    const booking = db.prepare("SELECT * FROM bookings WHERE id = ?").get(id);
-    res.json({ ok: true, booking: enrich(booking) });
-});
+    res.json({ ok: true, booking: toBooking(await getBooking(id)) });
+}));
 
-/* ---------- GET /api/bookings/:id  (full record — public, for the organ donation app) ---------- */
-/* NOTE: publicly readable by design (matches openapi.yaml's security: []).
-   This does expose customerName to an external consumer — worth a privacy
-   gut-check with your team before this ships, since it wasn't demanded by
-   a specific need statement, just added for symmetry with /artisans. */
-router.get("/:id", (req, res) => {
-    const booking = db.prepare("SELECT * FROM bookings WHERE id = ?").get(req.params.id);
+/* ---------- GET /api/bookings/:id (partner key; omits customer identity) ---------- */
+router.get("/:id", requireScope("partner"), asyncHandler(async (req, res) => {
+    const booking = await getBooking(req.params.id);
     if (!booking) {
         return res.status(404).json({ ok: false, error: "Booking not found." });
     }
-    res.json({ ok: true, booking: enrich(booking) });
-});
+    res.json({ ok: true, booking: toPartnerBooking(booking) });
+}));
 
-/* ---------- GET /api/bookings/:id/status  (public — the organ donation app's actual need) ---------- */
-router.get("/:id/status", (req, res) => {
-    const booking = db.prepare("SELECT status FROM bookings WHERE id = ?").get(req.params.id);
-    if (!booking) {
+/* ---------- GET /api/bookings/:id/status (partner key) ---------- */
+router.get("/:id/status", requireScope("partner"), asyncHandler(async (req, res) => {
+    const { rows } = await db.query("SELECT status FROM bookings WHERE id = $1", [req.params.id]);
+    if (!rows[0]) {
         return res.status(404).json({ ok: false, error: "Booking not found." });
     }
-    res.json({ ok: true, status: booking.status });
-});
+    res.json({ ok: true, status: rows[0].status });
+}));
 
 /* ---------- PATCH /api/bookings/:id/status  (artisan accepts/declines/completes their own job) ---------- */
 /* This replaces the old PATCH /api/bookings/:id — same logic, moved to the
    dedicated /status path per the design decision in ENDPOINT_LIST.md /
    openapi.yaml, to avoid two routes doing the same job. */
-router.patch("/:id/status", requireRole("artisan"), (req, res) => {
+router.patch("/:id/status", requireScope("web"), requireRole("artisan"), asyncHandler(async (req, res) => {
     const { status } = req.body || {};
     if (!["upcoming", "declined", "completed"].includes(status)) {
         return res.status(400).json({ ok: false, error: "Invalid status." });
     }
 
-    const booking = db.prepare("SELECT * FROM bookings WHERE id = ?").get(req.params.id);
+    const current = await db.query("SELECT * FROM bookings WHERE id = $1", [req.params.id]);
+    const booking = current.rows[0];
     if (!booking || booking.artisan_id !== req.session.user.id) {
         return res.status(404).json({ ok: false, error: "Booking not found." });
     }
 
-    db.prepare("UPDATE bookings SET status = ? WHERE id = ?").run(status, booking.id);
-    const updated = db.prepare("SELECT * FROM bookings WHERE id = ?").get(booking.id);
-    res.json({ ok: true, booking: enrich(updated) });
-});
+    await db.query("UPDATE bookings SET status = $1 WHERE id = $2", [status, booking.id]);
+    res.json({ ok: true, booking: toBooking(await getBooking(booking.id)) });
+}));
 
 module.exports = router;

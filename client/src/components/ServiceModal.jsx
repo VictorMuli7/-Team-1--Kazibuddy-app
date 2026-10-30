@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext.jsx';
+import { API_URL, apiFetch } from '../lib/api';
 
-const API_URL = 'http://localhost:3000/api';
 
 export default function ServiceModal({ service, onClose }) {
   const { session } = useAuth();
@@ -66,7 +66,7 @@ export default function ServiceModal({ service, onClose }) {
     setMsg('');
 
     try {
-      const response = await fetch(`${API_URL}/bookings`, {
+      const response = await apiFetch(`${API_URL}/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -204,4 +204,3 @@ export default function ServiceModal({ service, onClose }) {
     </div>
   );
 }
-

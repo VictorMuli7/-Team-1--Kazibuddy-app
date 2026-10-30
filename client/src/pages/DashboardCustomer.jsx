@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import Header from '../components/Header.jsx';
 import Footer from '../components/Footer.jsx';
 import { useAuth } from '../lib/AuthContext.jsx';
+import { API_URL, apiFetch } from '../lib/api';
 
-const API_URL = 'http://localhost:3000/api';
 
 const navLinks = [
   { to: '/#services', label: 'Browse Services' },
@@ -38,7 +38,7 @@ export default function DashboardCustomer() {
 
     const loadBookings = async () => {
       try {
-        const response = await fetch(`${API_URL}/bookings`, {
+        const response = await apiFetch(`${API_URL}/bookings`, {
           credentials: 'include',
         });
 
@@ -259,4 +259,3 @@ export default function DashboardCustomer() {
     </>
   );
 }
-

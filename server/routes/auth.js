@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const db = require("../db");
+const { asyncHandler } = require("../middleware");
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ function toPublicUser(row) {
 }
 
 /* ---------- POST /api/auth/register ---------- */
-router.post("/register", (req, res) => {
+router.post("/register", asyncHandler(async (req, res) => {
   const { role, fullname, email, phone, password, skill, blood_type, rhesus_factor } = req.body || {};
 
   if (!role || !["customer", "artisan"].includes(role)) {
@@ -37,8 +38,8 @@ router.post("/register", (req, res) => {
     return res.status(400).json({ ok: false, error: "Please select your rhesus factor." });
   }
 
-  const existing = db.prepare("SELECT id FROM users WHERE lower(email) = lower(?)").get(email);
-  if (existing) {
+  const existing = await db.query("SELECT id FROM users WHERE lower(email) = lower($1)", [email]);
+  if (existing.rows.length) {
     return res.status(409).json({ ok: false, error: "An account with that email already exists." });
   }
 
@@ -46,36 +47,46 @@ router.post("/register", (req, res) => {
   const password_hash = bcrypt.hashSync(password, 10);
   const joined = new Date().toISOString().slice(0, 10);
 
-  const row = {
-    id, role, fullname, email, phone: phone || null, password_hash,
-    status: role === "artisan" ? "pending" : "active",
-    joined,
-    skill: role === "artisan" ? skill : null,
-    verified: 0,
-    bio: role === "artisan" ? "" : null,
-    rate: role === "artisan" ? "Not set yet" : null,
-    blood_type: role === "artisan" ? blood_type : null,
-    rhesus_factor: role === "artisan" ? rhesus_factor : null,
-  };
+  let user;
+  try {
+    const result = await db.query(
+      `INSERT INTO users (id, role, fullname, email, phone, password_hash, status, joined, skill, verified, bio, rate, blood_type, rhesus_factor)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       RETURNING *`,
+      [
+        id, role, fullname, email, phone || null, password_hash,
+        role === "artisan" ? "pending" : "active",
+        joined,
+        role === "artisan" ? skill : null,
+        false,
+        role === "artisan" ? "" : null,
+        role === "artisan" ? "Not set yet" : null,
+        role === "artisan" ? blood_type : null,
+        role === "artisan" ? rhesus_factor : null,
+      ]
+    );
+    user = result.rows[0];
+  } catch (err) {
+    // Two sign-ups with the same email racing past the check above.
+    if (err.code === "23505" && /email/.test(err.constraint || "")) {
+      return res.status(409).json({ ok: false, error: "An account with that email already exists." });
+    }
+    throw err;
+  }
 
-  db.prepare(`
-    INSERT INTO users (id, role, fullname, email, phone, password_hash, status, joined, skill, verified, bio, rate, blood_type, rhesus_factor)
-    VALUES (@id, @role, @fullname, @email, @phone, @password_hash, @status, @joined, @skill, @verified, @bio, @rate, @blood_type, @rhesus_factor)
-  `).run(row);
-
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(id);
   req.session.user = toSessionUser(user);
   res.json({ ok: true, user: toPublicUser(user) });
-});
+}));
 
 /* ---------- POST /api/auth/login ---------- */
-router.post("/login", (req, res) => {
+router.post("/login", asyncHandler(async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ ok: false, error: "Please enter your email and password." });
   }
 
-  const user = db.prepare("SELECT * FROM users WHERE lower(email) = lower(?)").get(email);
+  const { rows } = await db.query("SELECT * FROM users WHERE lower(email) = lower($1)", [email]);
+  const user = rows[0];
   if (!user) return res.status(401).json({ ok: false, error: "No account found with that email." });
   if (!bcrypt.compareSync(password, user.password_hash)) {
     return res.status(401).json({ ok: false, error: "Incorrect password." });
@@ -86,7 +97,7 @@ router.post("/login", (req, res) => {
 
   req.session.user = toSessionUser(user);
   res.json({ ok: true, user: toPublicUser(user) });
-});
+}));
 
 /* ---------- POST /api/auth/logout ---------- */
 router.post("/logout", (req, res) => {
