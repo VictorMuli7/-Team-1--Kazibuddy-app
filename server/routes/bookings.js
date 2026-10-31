@@ -1,4 +1,5 @@
 const express = require("express");
+const { randomUUID } = require("crypto");
 const db = require("../db");
 const { requireRole, asyncHandler } = require("../middleware");
 const { requireScope } = require("../middleware/apiSecurity");
@@ -44,24 +45,30 @@ async function getBooking(id) {
     return rows[0] || null;
 }
 
-/* Finds an artisan for a service: prefers a verified, active artisan whose
-   skill matches; falls back to any verified/active artisan. */
-function findArtisanForService(serviceTitle) {
-    const artisans = db.prepare(
-        "SELECT * FROM users WHERE role = 'artisan' AND status = 'active' AND verified = 1 AND injured = 0"
-    ).all();
-async function findArtisanForService(serviceTitle) {
-    const { rows: artisans } = await db.query(
-        "SELECT * FROM users WHERE role = 'artisan' AND status = 'active' AND verified = TRUE ORDER BY joined, id"
+/* Select an available artisan while locking their row until booking creation. */
+async function findArtisanForService(serviceTitle, client) {
+    const { rows } = await client.query(
+        `SELECT * FROM users
+         WHERE role = 'artisan' AND status = 'active' AND verified = TRUE AND injured = FALSE
+         ORDER BY
+           CASE
+             WHEN lower(skill) = lower($1) THEN 0
+             WHEN strpos(lower(skill), lower($1)) > 0
+               OR strpos(lower($1), lower(skill)) > 0 THEN 1
+             ELSE 2
+           END,
+           joined, id
+         LIMIT 1
+         FOR UPDATE`,
+        [serviceTitle]
     );
-    const norm = (s) => (s || "").toLowerCase();
-    const direct = artisans.find((a) => norm(a.skill) === norm(serviceTitle));
-    if (direct) return direct;
-    const partial = artisans.find(
-        (a) => norm(a.skill).includes(norm(serviceTitle)) || norm(serviceTitle).includes(norm(a.skill))
-    );
-    if (partial) return partial;
-    return artisans[0] || null;
+    return rows[0] || null;
+}
+
+function isRealDate(value) {
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
 /* ---------- GET /api/bookings  (scoped to the signed-in user's role) ---------- */
@@ -84,18 +91,37 @@ router.post("/", requireScope("web"), requireRole("customer"), asyncHandler(asyn
     if (!serviceTitle || !date) {
         return res.status(400).json({ ok: false, error: "Please choose a service and a date." });
     }
-
-    const artisan = await findArtisanForService(serviceTitle);
-    if (!artisan) {
-        return res.status(409).json({ ok: false, error: "No artisan is currently available for this service. Please try again later." });
+    if (typeof serviceTitle !== "string" || serviceTitle.length > 100 ||
+        (price != null && (typeof price !== "string" || price.length > 40))) {
+        return res.status(400).json({ ok: false, error: "Invalid service or price." });
+    }
+    if (!isRealDate(date)) {
+        return res.status(400).json({ ok: false, error: "Please choose a valid date." });
     }
 
-    const id = "b-" + Date.now();
-    await db.query(
-        `INSERT INTO bookings (id, customer_id, service, artisan_id, date, status, price)
-         VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
-        [id, req.session.user.id, serviceTitle, artisan.id, date, price || null]
-    );
+    const client = await db.pool.connect();
+    let id;
+    try {
+        await client.query("BEGIN");
+        const artisan = await findArtisanForService(serviceTitle, client);
+        if (!artisan) {
+            await client.query("ROLLBACK");
+            return res.status(409).json({ ok: false, error: "No artisan is currently available for this service. Please try again later." });
+        }
+
+        id = "b-" + randomUUID();
+        await client.query(
+            `INSERT INTO bookings (id, customer_id, service, artisan_id, date, status, price)
+             VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
+            [id, req.session.user.id, serviceTitle, artisan.id, date, price || null]
+        );
+        await client.query("COMMIT");
+    } catch (err) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw err;
+    } finally {
+        client.release();
+    }
 
     res.json({ ok: true, booking: toBooking(await getBooking(id)) });
 }));

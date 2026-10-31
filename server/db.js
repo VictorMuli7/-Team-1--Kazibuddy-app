@@ -36,9 +36,8 @@ const SCHEMA_SQL = `
     status        TEXT NOT NULL DEFAULT 'active',
     joined        TEXT NOT NULL,
     skill         TEXT,
-    verified      INTEGER NOT NULL DEFAULT 0,
-    injured       INTEGER NOT NULL DEFAULT 0 CHECK (injured IN (0, 1)),
     verified      BOOLEAN NOT NULL DEFAULT FALSE,
+    injured       BOOLEAN NOT NULL DEFAULT FALSE,
     bio           TEXT,
     rate          TEXT,
     blood_type    TEXT CHECK (blood_type IS NULL OR blood_type IN ('A','B','AB','O')),
@@ -84,9 +83,7 @@ const SCHEMA_SQL = `
 /* ---------- Create tables (safe to run repeatedly) ---------- */
 async function initSchema(client) {
   await client.query(SCHEMA_SQL);
-}
-if (!userColumns.has("injured")) {
-  db.exec("ALTER TABLE users ADD COLUMN injured INTEGER NOT NULL DEFAULT 0 CHECK (injured IN (0, 1))");
+  await client.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS injured BOOLEAN NOT NULL DEFAULT FALSE");
 }
 
 /* ---------- Seed once, only if the users table is empty ---------- */
