@@ -9,6 +9,7 @@ import Reviews from './pages/Reviews.jsx';
 
 import DashboardCustomer from './pages/DashboardCustomer.jsx';
 import DashboardArtisan from './pages/DashboardArtisan.jsx';
+import DashboardArtisanClinic from './pages/DashboardArtisanClinic.jsx';
 import DashboardAdmin from './pages/DashboardAdmin.jsx';
 
 export default function App() {
@@ -37,6 +38,15 @@ export default function App() {
           element={
             <ProtectedRoute roles={['artisan']}>
               <DashboardArtisan />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/artisan/clinic"
+          element={
+            <ProtectedRoute roles={['artisan']}>
+              <DashboardArtisanClinic />
             </ProtectedRoute>
           }
         />
