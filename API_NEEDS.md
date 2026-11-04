@@ -1,5 +1,5 @@
 API NEEDS STATEMENTS
-The organ donation app needs to read verified artisans and their services in order to identify workers who can provide services when the hospital needs them.
+The organ donation app needs to read verified artisans and their services in order to identify organ donors.
 The organ donation app needs to read actions taken by the artisan (accepted or declined) in order to identify workers who have agreed to perform a particular service.
 The organ donation app needs to read the prices charged by the artisan in order to compare services costs and select a suitable worker for the hospital.
 
