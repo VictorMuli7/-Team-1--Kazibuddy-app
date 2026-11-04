@@ -7,6 +7,7 @@ const PgStore = require("connect-pg-simple")(session);
 const cors = require("cors");
 const { pool, initDb } = require("./db");
 const { parseApiKeys, requireApiKey, requireScope, rateLimit } = require("./middleware/apiSecurity");
+const { monitor } = require("./middleware/monitoring"); 
 
 const app = express();
 
@@ -50,6 +51,8 @@ app.use(cors({
   credentials: true,
   exposedHeaders: ["Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
 }));
+
+app.use(monitor); // NEW: times every request and logs one JSON line when it finishes
 
 app.use(express.json({ limit: "100kb" }));
 
