@@ -8,7 +8,7 @@ This README covers only the endpoints that integration uses. Jua Kali's internal
 
 - **Base URL:** `http://localhost:3000` (if someone gave you a hosted URL, use that instead)
 - **Format:** every response is JSON
-- **Full contract:** [`openapi.yaml`](./openapi.yaml) (rendered docs: `<link-to-your-Swagger-UI-or-Redoc-page>`)
+- **Full contract:** [`openapi.yaml`](./openapi.yaml) (rendered docs: `https://editor.swagger.io/?url=https://raw.githubusercontent.com/VictorMuli7/-Team-1--Kazibuddy-app/refs/heads/main/openapi.yaml`)
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
