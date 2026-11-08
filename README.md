@@ -455,3 +455,40 @@ API_KEYS=label:scope:key[:limitPerMinute],label:scope:key,...
 On startup the log shows how many keys loaded (`API keys loaded: 2 (organ-donation/partner, web-app/web)`). If it says `none`, every request will get `401`. The old `PARTNER_API_KEYS` variable still works and is treated as partner-scope keys.
 
 The rate limiter counts per key in the server's memory, so it resets when the server restarts and is not shared between several server copies (production systems use something like Redis).
+
+## Monitoring: `/api/stats`
+
+`GET /api/stats` returns running totals for the API since the server last
+started. It needs an API key, like every other `/api` route.
+
+```
+curl -H "X-API-Key: <your-api-key>" https://team-1-kazibuddy-app.onrender.com/api/stats
+```
+
+Example response:
+
+```json
+{
+  "startedAt": "2026-11-08T18:32:17.376Z",
+  "uptimeSeconds": 383,
+  "total": 262,
+  "clientErrors": 158,
+  "serverErrors": 0,
+  "errorRatePercent": 0,
+  "avgMs": 1.5,
+  "routes": {
+    "GET /api/artisans/": { "count": 51, "clientErrors": 0, "serverErrors": 0, "avgMs": 3.7, "maxMs": 55.6 },
+    "GET /api/artisans/:id": { "count": 57, "clientErrors": 30, "serverErrors": 0, "avgMs": 1.7, "maxMs": 2.5 },
+    "GET (no route)": { "count": 128, "clientErrors": 128, "serverErrors": 0, "avgMs": 0.8, "maxMs": 1.2 }
+  }
+}
+```
+
+- `clientErrors` counts 4xx responses and `serverErrors` counts 5xx responses.
+- `errorRatePercent` is server errors divided by total requests.
+- `(no route)` groups requests rejected before reaching a route (401, 403, 429) and 404s for paths that do not exist.
+- The numbers live in memory, so they reset when the server restarts.
+
+Every request is also logged as one JSON line (time, method, path, status,
+response time, caller label). Keys, query strings and request bodies are
+never logged.
