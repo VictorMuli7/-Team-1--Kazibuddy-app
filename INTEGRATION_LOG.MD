@@ -8,6 +8,7 @@ Expected Result: HTTP 200 OK, with a JSON response containing the departments an
 
 Actual response: HTTP 503 Service Unavailable
 {"success":false,"message":"Database is not connected. Check MongoDB Atlas Network Access (allow 0.0.0.0/0 for Vercel) and that atlas-hospita is linked to this project.","error":"DB_NOT_CONNECTED"}
+
 The endpoint did not return the expected list of departments. Instead, it returned an error indicating that the deployed API could not connect to its database.
 
 Status: Failed - checking for connection with the database
@@ -17,7 +18,7 @@ Retest: Get All Departments
 Actual Result: HTTP 200 OK
 {"success":true,"data":[{"_id":"6ad9a840ed2fc22a78edb3d8","name":"Dental","slug":"dental","description":"Dental clinic","isActive":true},{"_id":"6ad9a8407729371962982743","name":"Dental","slug":"dental","description":"Dental clinic","isActive":true},{"_id":"6ad9a840c1ae3f1e309799c6","name":"Dental","slug":"dental","description":"Dental clinic","isActive":true},{"_id":"6ad9a840ed2fc22a78edb3d2","name":"General OPD","slug":"general-opd","description":"General outpatient department","isActive":true},{"_id":"6ad9a840772937196298273b","name":"General OPD","slug":"general-opd","description":"General outpatient department","isActive":true},{"_id":"6ad9a8407729371962982740","name":"Pediatrics","slug":"pediatrics","description":"Children and infant care","isActive":true},{"_id":"6ad9a840ed2fc22a78edb3d5","name":"Pediatrics","slug":"pediatrics","description":"Children and infant care","isActive":true}]} 
 
-Status: Successful retest after reconnecting HospitalQ's database to MongoDB.
+Status: Successful retest after reconnecting HospitalQ's database in MongoDB.
 
 Endpoint 2: Get General OPD Queue - retrieves the queue entries for the General OPD department from the HospitalQ partner API.
 
