@@ -57,3 +57,9 @@ every path and example above uses the corrected value.
   `/donors/summary`). If the organ donation app needs it, that should be a
   team decision made deliberately, not a side effect of editing the public
   artisan response.
+
+### Versioning (Week 13)
+
+- **v2 added for the artisan endpoints:** `GET /api/v2/artisans` and `GET /api/v2/artisans/{id}`. The list is `{ ok, data, count }`, a single artisan is `{ ok, data }`, and `fullname` is renamed `name`. Everything else is unchanged.
+- **v1 is deprecated** (sunset 2026-11-13): `/api/v1/artisans[/{id}]`, and the unversioned `/api/artisans[/{id}]`, which is kept as an alias of v1 so existing callers do not break. v1 responses send `Deprecation`, `Sunset` and `Link` headers.
+- `GET /api/artisans` paths elsewhere in this document describe the v1 shape.

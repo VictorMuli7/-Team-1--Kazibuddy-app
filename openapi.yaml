@@ -14,6 +14,7 @@ security:
 paths:
   /api/artisans:
     get:
+      deprecated: true
       summary: Return verified artisans and their services
       description: "Implemented in server/routes/artisans.js. Satisfies: \"The organ donation app needs\
         \ to read verified artisans and their services in order to identify workers who can provide services\
@@ -53,6 +54,7 @@ paths:
                       $ref: '#/components/schemas/ArtisanPublic'
   /api/artisans/{id}:
     get:
+      deprecated: true
       summary: Return details of a specific artisan
       description: Implemented in server/routes/artisans.js. Same need as GET /api/artisans, scoped to
         one artisan.
@@ -79,6 +81,76 @@ paths:
                     type: boolean
                   artisan:
                     $ref: '#/components/schemas/ArtisanPublic'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v2/artisans:
+    get:
+      summary: Return verified artisans and their services (v2)
+      description: "Implemented in server/routes/v2.js. Same data and filters as the deprecated GET /api/artisans\
+        \ (v1), different shape: the list is wrapped as { ok, data, count } and fullname is renamed name.\
+        \ v1 stops working on 2026-11-13. See DEPRECATION_NOTICE.md.\n"
+      security: []
+      parameters:
+      - name: skill
+        in: query
+        required: false
+        schema:
+          type: string
+        example: Plumbing
+      - name: verified
+        in: query
+        required: false
+        schema:
+          type: boolean
+        example: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - data
+                - count
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ArtisanPublicV2'
+                  count:
+                    type: integer
+                    example: 2
+  /api/v2/artisans/{id}:
+    get:
+      summary: Return details of a specific artisan (v2)
+      description: Implemented in server/routes/v2.js. Same as GET /api/artisans/{id} (v1) but returns { ok, data } with name instead of fullname.
+      security: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: u-artisan
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - data
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/ArtisanPublicV2'
         '404':
           $ref: '#/components/responses/NotFound'
   /api/bookings/{id}:
@@ -370,6 +442,60 @@ components:
           type: string
           example: u-artisan
         fullname:
+          type: string
+          example: Faith Wanjiru
+        phone:
+          type: string
+          nullable: true
+          example: +254 700 000 003
+        skill:
+          type: string
+          nullable: true
+          example: Hair Styling
+        verified:
+          type: boolean
+          example: true
+        bio:
+          type: string
+          nullable: true
+          example: Braids, perms, treatments and cuts.
+        rate:
+          type: string
+          nullable: true
+          example: From KES 500/style
+        blood_type:
+          type: string
+          nullable: true
+          enum:
+          - A
+          - B
+          - AB
+          - O
+          example: O
+        rhesus_factor:
+          type: string
+          nullable: true
+          enum:
+          - positive
+          - negative
+          example: positive
+    ArtisanPublicV2:
+      type: object
+      description: "v2 shape of ArtisanPublic (fullname is renamed name). Deliberately narrower than the full User schema \u2014 this is what an external consumer\
+        \ (the organ donation app) sees, not what an admin sees. Excludes email and account status, which\
+        \ are internal / customer-facing concerns, not relevant to \"find a worker for a job.\" This is\
+        \ a judgment call, not something ENDPOINT_LIST.md specified field-by-field \u2014 worth the team\
+        \ confirming before this gets built.\n"
+      required:
+      - id
+      - name
+      - skill
+      - verified
+      properties:
+        id:
+          type: string
+          example: u-artisan
+        name:
           type: string
           example: Faith Wanjiru
         phone:

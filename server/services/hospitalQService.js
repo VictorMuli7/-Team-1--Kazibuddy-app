@@ -1,3 +1,5 @@
+const { currentVersion } = require("./partner");
+
 const BASE_URL = "https://hospitalq-webapp.vercel.app";
 
 // HospitalQ now requires an API key on its requests.
@@ -12,7 +14,7 @@ function keyHeaders() {
 let cachedToken = null;
 
 async function login() {
-  const response = await fetch(`${BASE_URL}/api/auth/login`, {
+  const response = await fetch(`${BASE_URL}${currentVersion().prefix}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...keyHeaders() },
     body: JSON.stringify({
@@ -31,7 +33,11 @@ async function login() {
   return cachedToken;
 }
 
-async function request(path, options = {}, protectedRoute = false) {
+// `path` is the endpoint without the version prefix, e.g. "/departments".
+// The prefix and the response parsing come from services/partner.js.
+async function request(endpoint, options = {}, protectedRoute = false) {
+  const ver = currentVersion();
+  const path = `${ver.prefix}${endpoint}`;
   const headers = {
     ...(options.body ? { "Content-Type": "application/json" } : {}),
     ...keyHeaders(),
@@ -64,26 +70,26 @@ async function request(path, options = {}, protectedRoute = false) {
     throw new Error(`HospitalQ returned ${response.status}`);
   }
 
-  return result;
+  return ver.parse(result);
 }
 
 module.exports = {
-  departments: () => request("/api/departments"),
+  departments: () => request("/departments"),
 
   queue: (department) =>
-    request(`/api/queue/${encodeURIComponent(department)}`),
+    request(`/queue/${encodeURIComponent(department)}`),
 
   waitStats: (department) =>
-    request(`/api/queue/${encodeURIComponent(department)}/stats`),
+    request(`/queue/${encodeURIComponent(department)}/stats`),
 
   checkIn: (patientName, department) =>
-    request("/api/queue", {
+    request("/queue", {
       method: "POST",
       body: JSON.stringify({ patientName, department })
     }, true),
 
   overview: () =>
-    request("/api/analytics/overview", {}, true)
+    request("/analytics/overview", {}, true)
 };
 
 

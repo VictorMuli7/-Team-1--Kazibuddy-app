@@ -113,11 +113,43 @@ Expected response — `200`:
 
 ---
 
+## Versioning and deprecation
+
+The API is versioned in the URL. **v2 is the current version. v1 is deprecated and will stop working on 2026-11-13.**
+
+| Version | Artisan URLs | Status |
+|---------|--------------|--------|
+| v2 | `/api/v2/artisans`, `/api/v2/artisans/{id}` | Current |
+| v1 | `/api/v1/artisans`, `/api/v1/artisans/{id}` | Deprecated, sunset 2026-11-13 |
+| unversioned | `/api/artisans`, `/api/artisans/{id}` | Same as v1 (so existing callers keep working), deprecated |
+
+What changed in v2: the list is `{ "ok": true, "data": [...], "count": N }` (was `{ "artisans": [...] }`), a single artisan is `{ "ok": true, "data": {...} }` (was `{ "artisan": {...} }`), and `fullname` is now `name`. Everything else is identical. See [`DEPRECATION_NOTICE.md`](./DEPRECATION_NOTICE.md) for the before/after and migration steps.
+
+Every v1 response carries `Deprecation: true`, a `Sunset` date and a `Link: </api/v2/artisans>; rel="successor-version"` header. v2 responses do not. The examples in the next section show the **v1** shape.
+
+```bash
+curl -H "X-API-Key: <your-api-key>" "http://localhost:3000/api/v2/artisans?skill=Hair%20Styling"
+```
+
+```json
+{
+  "ok": true,
+  "data": [
+    { "id": "u-artisan", "name": "Faith Wanjiru", "phone": "+254 700 000 003", "skill": "Hair Styling",
+      "verified": true, "bio": "Braids, perms, treatments and cuts. 6 years experience, home visits available.",
+      "rate": "From KES 500/style" }
+  ],
+  "count": 1
+}
+```
+
+---
+
 ## Endpoint examples
 
 The IDs below (`u-artisan`, `b1`, `b3`) come from the demo data that is created automatically the first time the server starts.
 
-### 1. List artisans — `GET /api/artisans`
+### 1. List artisans — `GET /api/artisans` (v1, deprecated)
 
 | Query parameter | Type | Required | Example | Meaning |
 |-----------------|------|----------|---------|---------|
@@ -155,7 +187,7 @@ Notes:
 - If nothing matches, you get `{ "ok": true, "artisans": [] }`.
 - Email and account status are deliberately not included.
 
-### 2. Get one artisan — `GET /api/artisans/{id}`
+### 2. Get one artisan — `GET /api/artisans/{id}` (v1, deprecated)
 
 ```bash
 curl -H "X-API-Key: <your-api-key>" http://localhost:3000/api/artisans/u-artisan

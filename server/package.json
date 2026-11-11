@@ -8,7 +8,7 @@
     "start": "node server.js",
     "seed": "node seed.js",
     "migrate:sqlite": "node scripts/migrate-sqlite-to-postgres.js",
-    "test": "node --test test/security.test.js"
+    "test": "node --test test/security.test.js test/versions.test.js test/partner.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
